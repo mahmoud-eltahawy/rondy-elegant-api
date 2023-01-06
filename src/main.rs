@@ -3,13 +3,26 @@ mod service;
 mod repo;
 mod config;
 
-use config::{ get_config_postgres_url, get_configs_server, set_debug_configs};
+use config::{
+  get_config_postgres_url,
+  get_configs_server,
+  set_debug_configs
+};
 use dotenv::dotenv;
 
-use actix_web::{HttpServer, middleware::Logger, App, web::Data};
+use actix_web::{
+  HttpServer,
+  middleware::Logger,
+  App,
+  web::Data
+};
 
-use service::task::test;
-use sqlx::{Pool, Postgres, postgres::PgPoolOptions};
+use service::scopes;
+use sqlx::{
+  Pool,
+  Postgres,
+  postgres::PgPoolOptions
+};
 
 pub struct AppState{
    pub db : Pool<Postgres>
@@ -31,7 +44,7 @@ async fn main() -> std::io::Result<()> {
       App::new()
           .app_data(Data::new(AppState{db: pool.clone()}))
           .wrap(logger)
-          .service(test)
+          .service(scopes())
   }).bind(get_configs_server())?
       .run()
       .await?;
