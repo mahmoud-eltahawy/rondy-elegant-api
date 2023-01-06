@@ -17,7 +17,6 @@ use actix_web::{
   web::Data
 };
 
-use service::scopes;
 use sqlx::{
   Pool,
   Postgres,
@@ -33,20 +32,23 @@ async fn main() -> std::io::Result<()> {
   dotenv().ok();
   set_debug_configs();
 
-  let pool = PgPoolOptions::new()
-      .max_connections(10)
-      .connect(&get_config_postgres_url())
-      .await
-      .expect("failed to connect db");
+  let db_pool = connect_db_pool().await;
 
   HttpServer::new(move || {
-      let logger = Logger::default();
       App::new()
-          .app_data(Data::new(AppState{db: pool.clone()}))
-          .wrap(logger)
-          .service(scopes())
+          .app_data(Data::new(AppState{db: db_pool.clone()}))
+          .wrap(Logger::default())
+          .service(service::scopes())
   }).bind(get_configs_server())?
       .run()
       .await?;
   Ok(())
+}
+
+async fn connect_db_pool() -> Pool<Postgres>{
+  PgPoolOptions::new()
+      .max_connections(10)
+      .connect(&get_config_postgres_url())
+      .await
+      .expect("failed to connect db")
 }

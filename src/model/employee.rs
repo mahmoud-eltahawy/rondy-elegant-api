@@ -1,10 +1,18 @@
 use serde::{Serialize, Deserialize};
+use sqlx::FromRow;
+use uuid::Uuid;
 
-#[derive(Serialize,Deserialize)]
+pub static POSITIONS : [&str;3] = ["ADMIN","SUPER_USER","USER"];
+
+#[derive(Serialize,Deserialize,FromRow,Clone)]
 pub struct Employee{
-    id : i32,
-    department_id : String,
-    first_name: String,
-    middle_name: String,
-    last_name: String,
+    pub id              : Option<Uuid>,
+    pub department_id   : Uuid,
+    pub position        : String,
+    pub first_name      : String,
+    pub middle_name     : String,
+    pub last_name       : String,
+    pub card_id         : i16,
+    pub password        : String
 }
+
