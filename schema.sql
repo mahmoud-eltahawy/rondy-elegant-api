@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS employee(
        CONSTRAINT chk_employee_position CHECK(position in ('ADMIN', 'SUPER_USER', 'USER'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_of_employee_first_name ON employee(first_name);
+CREATE INDEX IF NOT EXISTS idx_of_employee_card_id ON employee(card_id);
 
 ALTER TABLE IF EXISTS department
 ADD FOREIGN KEY(boss_id)

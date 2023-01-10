@@ -50,3 +50,21 @@ pub async fn save(state : Data<AppState>,employee : Employee) -> Result<Uuid,Err
     Err(err) => Err(err)
   }
 }
+
+pub async fn get_employee_by_card_id(state : Data<AppState>,card_id : i16) -> Result<Employee,Error> {
+  let row = query_as!(Employee,r#"select
+      id as "id?",
+      department_id,
+      position,
+      first_name,
+      middle_name,
+      last_name,
+      card_id,
+      password
+ from employee where card_id = $1"#,card_id)
+    .fetch_one(&state.db);
+  match row.await {
+    Ok(emp) => Ok(emp),
+    Err(err) => Err(err)
+  }
+}
