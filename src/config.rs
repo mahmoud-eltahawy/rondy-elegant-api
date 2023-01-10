@@ -17,5 +17,5 @@ pub fn get_configs_server() -> (String,u16) {
 }
 
 pub fn get_config_postgres_url() -> String {
-  env::var("POSTGRES_URL").expect("unvalid db url key")
+  env::var("DATABASE_URL").expect("unvalid db url key")
 }

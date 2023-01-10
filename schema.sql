@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS employee(
        last_name          VARCHAR(20)        NOT NULL,
        card_id            SMALLINT           NOT NULL,
        password           TEXT               NOT NULL,
+       CONSTRAINT unique_employee_card_id UNIQUE(card_id),
        FOREIGN KEY(department_id) REFERENCES department(id) ON DELETE CASCADE,
        CONSTRAINT chk_employee_position CHECK(position in ('ADMIN', 'SUPER_USER', 'USER'))
 );
