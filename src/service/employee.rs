@@ -50,9 +50,9 @@ async fn login(state : web::Data<AppState>,
   }
   match verify_password(password, &employee.password) {
     Ok(result) => if result {
-        HttpResponse::Ok().json(employee)
+        HttpResponse::Ok().json(Some(employee))
       } else {
-        HttpResponse::NonAuthoritativeInformation().json("refused")
+        HttpResponse::NonAuthoritativeInformation().json(None::<Employee>)
       },
     Err(err)   => return HttpResponse::NotFound().json(err.to_string())
   }

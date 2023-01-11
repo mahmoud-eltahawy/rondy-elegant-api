@@ -14,14 +14,14 @@ CREATE TABLE IF NOT EXISTS employee(
        id                 UUID               PRIMARY KEY,
        department_id      UUID               NOT NULL,
        position           VARCHAR(12)        NOT NULL,
-       first_name         VARCHAR(20)        NOT NULL,
-       middle_name        VARCHAR(20)        NOT NULL,
-       last_name          VARCHAR(20)        NOT NULL,
+       first_name         VARCHAR(40)        NOT NULL,
+       middle_name        VARCHAR(40)        NOT NULL,
+       last_name          VARCHAR(40)        NOT NULL,
        card_id            SMALLINT           NOT NULL,
        password           TEXT               NOT NULL,
        CONSTRAINT unique_employee_card_id UNIQUE(card_id),
        FOREIGN KEY(department_id) REFERENCES department(id) ON DELETE CASCADE,
-       CONSTRAINT chk_employee_position CHECK(position in ('ADMIN', 'SUPER_USER', 'USER'))
+       CONSTRAINT chk_employee_position CHECK(position in ('SUPER_ADMIN','ADMIN', 'SUPER_USER', 'USER'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_of_employee_card_id ON employee(card_id);
@@ -65,5 +65,15 @@ CREATE TABLE IF NOT EXISTS shift_problem(
        FOREIGN KEY(maintainer_id) REFERENCES employee(id) ON DELETE CASCADE,
        FOREIGN KEY(machine_id) REFERENCES machine(id) ON DELETE CASCADE,
        FOREIGN KEY(shift_id) REFERENCES shift(id) ON DELETE CASCADE,
-       FOREIGN KEY(problem_id) REFERENCES problem(id) ON DELETE CASCADE,
+       FOREIGN KEY(problem_id) REFERENCES problem(id) ON DELETE CASCADE
 );
+
+---------------------------------------------------------------------------------
+------------------------------------- data --------------------------------------
+---------------------------------------------------------------------------------
+
+INSERT INTO department(id,name) VALUES('00000000-0000-0000-0000-000000000000','قسم التحكم');
+INSERT INTO employee(id,department_id,position,first_name,middle_name,last_name,card_id,password)
+VALUES('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-000000000000',
+'SUPER_ADMIN','elegant','rondy','er',0,'$2a$08$1hNk2wV1rsnhQmEr2zmlw.sSCM5XzaW2/iUsykVvGpVHO0tx5o5Ki');
+UPDATE department SET boss_id = '00000000-0000-0000-0000-000000000000' WHERE id = '00000000-0000-0000-0000-000000000000';
