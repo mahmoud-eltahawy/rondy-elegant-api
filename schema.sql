@@ -37,6 +37,12 @@ CREATE TABLE IF NOT EXISTS machine(
        CONSTRAINT unique_machine_name UNIQUE(name)
 );
 
+CREATE TABLE IF NOT EXISTS spare_part(
+       id                   UUID              PRIMARY KEY,
+       name                 VARCHAR(100)      NOT NULL,
+       CONSTRAINT unique_spare_part_name UNIQUE(name)
+);
+
 CREATE TABLE IF NOT EXISTS problem(
        id                   UUID              PRIMARY KEY,
        title                VARCHAR(70)       NOT NULL,
@@ -56,16 +62,29 @@ CREATE TABLE IF NOT EXISTS shift (
 CREATE TABLE IF NOT EXISTS shift_problem(
        id                   UUID              PRIMARY KEY,
        shift_id             UUID              NOT NULL,
-       problem_id           UUID              NOT NULL,
        machine_id           UUID              NOT NULL,
        maintainer_id        UUID              NOT NULL,
        begin_time           TIME              NOT NULL,
        end_time             TIME              NOT NULL,
-       comment              VARCHAR(400)      NOT NULL,
        FOREIGN KEY(maintainer_id) REFERENCES employee(id) ON DELETE CASCADE,
        FOREIGN KEY(machine_id) REFERENCES machine(id) ON DELETE CASCADE,
-       FOREIGN KEY(shift_id) REFERENCES shift(id) ON DELETE CASCADE,
-       FOREIGN KEY(problem_id) REFERENCES problem(id) ON DELETE CASCADE
+       FOREIGN KEY(shift_id) REFERENCES shift(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS shift_problem_problem(
+       shift_problem_id     UUID              NOT NULL,
+       problem_id           UUID              NOT NULL,
+       PRIMARY KEY(shift_problem_id,problem_id),
+       FOREIGN KEY(problem_id) REFERENCES problem(id) ON DELETE CASCADE,
+       FOREIGN KEY(shift_problem_id) REFERENCES shift_problem(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS shift_problem_spare_part(
+       shift_problem_id     UUID              NOT NULL,
+       spare_part_id        UUID              NOT NULL,
+       PRIMARY KEY(shift_problem_id,spare_part_id),
+       FOREIGN KEY(spare_part_id) REFERENCES spare_part(id) ON DELETE CASCADE,
+       FOREIGN KEY(shift_problem_id) REFERENCES shift_problem(id) ON DELETE CASCADE
 );
 
 ---------------------------------------------------------------------------------
