@@ -15,7 +15,7 @@ pub async fn find_all(state : Data<AppState>) -> Result<Vec<Employee>,Error> {
       last_name,
       card_id,
       password
-    from employee
+    from employee where card_id <> 0
         "#).fetch_all(&state.db).await {
     Ok(employees) => Ok(employees),
     Err(err) => Err(err)

@@ -4,8 +4,7 @@ use uuid::Uuid;
 
 
 #[derive(Serialize,Deserialize,FromRow)]
-pub struct Probelm{
-    pub id          : Uuid,
-    pub title       : String,
-    pub description : String
+pub struct SparePart{
+    pub id         : Uuid,
+    pub name       : String,
 }
