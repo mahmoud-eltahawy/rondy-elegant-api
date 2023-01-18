@@ -71,6 +71,20 @@ CREATE TABLE IF NOT EXISTS shift_problem(
        FOREIGN KEY(shift_id) REFERENCES shift(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS note(
+       id                   UUID              PRIMARY KEY,
+       shift_id             UUID,
+       shift_problem_id     UUID,
+       content              varchar(500)      NOT NULL,
+       FOREIGN KEY(shift_id) REFERENCES shift(id) ON DELETE CASCADE,
+       FOREIGN KEY(shift_problem_id) REFERENCES shift_problem(id) ON DELETE CASCADE,
+       CONSTRAINT chk_note_home CHECK(
+         shift_id IS NOT NULL AND shift_problem_id IS NULL
+         OR
+         shift_id IS NULL AND shift_problem_id IS NOT NULL
+       )
+);
+
 CREATE TABLE IF NOT EXISTS shift_problem_problem(
        shift_problem_id     UUID              NOT NULL,
        problem_id           UUID              NOT NULL,
