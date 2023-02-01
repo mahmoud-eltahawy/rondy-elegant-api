@@ -2,8 +2,9 @@ use actix_web::{
     get,web, Responder, HttpResponse, Scope, post};
 use bcrypt::BcryptResult;
 use serde::{Serialize, Deserialize};
+use uuid::Uuid;
 
-use crate::{AppState, repo::*, model::employee::Employee};
+use crate::{AppState, repo::{*, shift::{find_db_shift_by_date_and_order, save_db_shift}}, model::{employee::Employee, shift::DbShift}, timer::{get_current_date, get_relative_now, get_current_order}};
 
 pub fn scope() -> Scope{
   web::scope("/emp")
@@ -39,20 +40,49 @@ struct Credentials{
   password: String
 }
 
+async fn get_or_save_db_shift(state : web::Data<AppState>) -> Option<DbShift>{
+  let now = get_relative_now();
+  let date = get_current_date(now);
+  let order = get_current_order(now);
+  if let Some(date) = date {
+    match find_db_shift_by_date_and_order(state.clone(), date, order.clone()).await {
+      Some(shift) => return Some(shift),
+      None        =>{
+        match save_db_shift(state, DbShift{
+          id: Uuid::new_v4(),
+          shift_date: date,
+          shift_order: order as i16
+        }).await {
+          Some(shift) => return Some(shift),
+          None        => return None
+        }
+      }
+    }
+  } else {
+    None
+  }
+}
+
+
+
 #[post("/login")]
 async fn login(state : web::Data<AppState>,
                cred : web::Json<Credentials>) -> impl Responder{
   let Credentials{card_id,password} = cred.into_inner();
   let employee;
-  match employee::get_employee_by_card_id(state, card_id).await {
+  match employee::get_employee_by_card_id(state.clone(), card_id).await {
     Ok(result) => employee = result,
     Err(err)   => return HttpResponse::NotFound().json(err.to_string())
   }
   match verify_password(password, &employee.password) {
     Ok(result) => if result {
-        HttpResponse::Ok().json(Some(employee))
+        if let Some(shift) = get_or_save_db_shift(state).await {
+          HttpResponse::Ok().json(Some((employee,shift.id)))
+        } else {
+          HttpResponse::NonAuthoritativeInformation().json(None::<(Employee,Uuid)>)
+        }
       } else {
-        HttpResponse::NonAuthoritativeInformation().json(None::<Employee>)
+        HttpResponse::NonAuthoritativeInformation().json(None::<(Employee,Uuid)>)
       },
     Err(err)   => return HttpResponse::NotFound().json(err.to_string())
   }

@@ -51,10 +51,8 @@ CREATE TABLE IF NOT EXISTS problem(
 
 CREATE TABLE IF NOT EXISTS shift (
        id                   UUID              PRIMARY KEY,
-       department_id        UUID              NOT NULL,
        shift_order          SMALLINT          NOT NULL,
        shift_date           DATE              NOT NULL,
-       FOREIGN KEY(department_id) REFERENCES department(id) ON DELETE CASCADE,
        CONSTRAINT unique_shift_identity UNIQUE(shift_order,shift_date),
        CONSTRAINT chk_shift_order CHECK(shift_order BETWEEN 0 AND 4)
 );
@@ -62,11 +60,13 @@ CREATE TABLE IF NOT EXISTS shift (
 CREATE TABLE IF NOT EXISTS shift_problem(
        id                   UUID              PRIMARY KEY,
        shift_id             UUID              NOT NULL,
-       machine_id           UUID              NOT NULL,
+       writer_id            UUID              NOT NULL,
        maintainer_id        UUID              NOT NULL,
+       machine_id           UUID              NOT NULL,
        begin_time           TIME              NOT NULL,
        end_time             TIME              NOT NULL,
        FOREIGN KEY(maintainer_id) REFERENCES employee(id) ON DELETE CASCADE,
+       FOREIGN KEY(writer_id) REFERENCES employee(id) ON DELETE CASCADE,
        FOREIGN KEY(machine_id) REFERENCES machine(id) ON DELETE CASCADE,
        FOREIGN KEY(shift_id) REFERENCES shift(id) ON DELETE CASCADE
 );
