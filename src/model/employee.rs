@@ -1,8 +1,6 @@
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 
-pub static POSITIONS : [&str;3] = ["ADMIN","SUPER_USER","USER"];
-
 #[derive(Serialize,Deserialize)]
 pub struct Employee{
     pub id              : Option<Uuid>,

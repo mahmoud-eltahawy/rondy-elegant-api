@@ -1,22 +1,35 @@
 use std::error::Error;
 
 use actix_web::web::Data;
-use sqlx::query;
+use sqlx::{query, query_as};
 use uuid::Uuid;
 
-use crate::AppState;
+use crate::{AppState, model::problem_detail::Note};
 
-pub async fn save_note_to_shift_problem(state : Data<AppState>,shift_problem_id : &Uuid,note : String) -> Result<(),Box<dyn Error>> {
+pub async fn save_note_to_shift_problem(state : Data<AppState>,
+                  shift_problem_id : &Uuid,note : Note) -> Result<(),Box<dyn Error>> {
+  let Note{id,content} = note;
   let row = query!("
     INSERT INTO note(
         id,
         shift_problem_id,
         content)
-    VALUES($1,$2,$3);",Uuid::new_v4(),
-    shift_problem_id,note)
+    VALUES($1,$2,$3);",id,
+    shift_problem_id,content)
     .execute(&state.db);
   match row.await {
     Ok(_) => Ok(()),
     Err(err) => Err(err.into())
+  }
+}
+
+pub async fn fetch_note_by_shift_problem_id(state : Data<AppState>,
+                        shift_problem_id : &Uuid) -> Option<Note> {
+  let row = query_as!(Note,r#"
+    SELECT id ,content FROM note WHERE shift_problem_id = $1;"#,shift_problem_id)
+    .fetch_one(&state.db);
+  match row.await {
+    Ok(name) => Some(name),
+    Err(_) => None
   }
 }

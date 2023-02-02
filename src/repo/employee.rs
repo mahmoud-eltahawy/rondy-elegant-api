@@ -68,3 +68,35 @@ pub async fn get_employee_by_card_id(state : Data<AppState>,card_id : i16) -> Re
     Err(err) => Err(err)
   }
 }
+
+pub async fn fetch_employee_by_id(state : Data<AppState>,id : Uuid) -> Result<Employee,Error> {
+  let row = query_as!(Employee,r#"select
+      id as "id?",
+      department_id,
+      position,
+      first_name,
+      middle_name,
+      last_name,
+      card_id,
+      password
+ from employee where id = $1"#,id)
+    .fetch_one(&state.db);
+  match row.await {
+    Ok(emp) => Ok(emp),
+    Err(err) => Err(err)
+  }
+}
+
+struct EmployeeDepartment{
+  department_id : Uuid
+}
+
+pub async fn get_employee_department_id_by_id(state : Data<AppState>,id : Uuid) -> Result<Uuid,Error> {
+  let row = query_as!(EmployeeDepartment,r#"
+      select department_id from employee where id = $1"#,id)
+    .fetch_one(&state.db);
+  match row.await {
+    Ok(emp) => Ok(emp.department_id),
+    Err(err) => Err(err)
+  }
+}

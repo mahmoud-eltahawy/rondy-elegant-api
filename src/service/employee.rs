@@ -4,12 +4,13 @@ use bcrypt::BcryptResult;
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 
-use crate::{AppState, repo::{*, shift::{find_db_shift_by_date_and_order, save_db_shift}}, model::{employee::Employee, shift::DbShift}, timer::{get_current_date, get_relative_now, get_current_order}};
+use crate::{AppState, repo::{*, shift::{find_db_shift_by_date_and_order, save_db_shift}, employee::fetch_employee_by_id}, model::{employee::Employee, shift::DbShift}, timer::{get_current_date, get_relative_now, get_current_order}};
 
 pub fn scope() -> Scope{
   web::scope("/emp")
     .service(all)
     .service(save)
+    .service(get_employee_by_id)
     .service(login)
 }
 
@@ -63,7 +64,14 @@ async fn get_or_save_db_shift(state : web::Data<AppState>) -> Option<DbShift>{
   }
 }
 
-
+#[post("/emp")]
+async fn get_employee_by_id(state : web::Data<AppState>,
+               id : web::Json<Uuid>) -> impl Responder{
+  match fetch_employee_by_id(state, id.into_inner()).await {
+    Ok(result) => HttpResponse::NonAuthoritativeInformation().json(Some(result)),
+    Err(_)     => HttpResponse::NonAuthoritativeInformation().json(None::<Employee>)
+  }
+}
 
 #[post("/login")]
 async fn login(state : web::Data<AppState>,
