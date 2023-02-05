@@ -4,32 +4,40 @@ use bcrypt::BcryptResult;
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 
-use crate::{AppState, repo::{*, shift::{find_db_shift_by_date_and_order, save_db_shift}, employee::fetch_employee_by_id}, model::{employee::Employee, shift::DbShift}, timer::{get_current_date, get_relative_now, get_current_order}};
+use crate::{AppState,
+            repo::{
+              shift::get_or_save_db_shift,
+              employee::{
+                fetch_employee_by_id,
+                find_all, save, get_employee_by_card_id
+              }},
+};
+use rec::model::employee::Employee;
 
 pub fn scope() -> Scope{
   web::scope("/emp")
     .service(all)
-    .service(save)
+    .service(save_employee)
     .service(get_employee_by_id)
     .service(login)
 }
 
 #[get("/all")]
 async fn all(state : web::Data<AppState>) -> impl Responder{
-  match employee::find_all(state).await {
+  match find_all(&state).await {
     Ok(result) => HttpResponse::Ok().json(result),
     Err(err)   => HttpResponse::NotFound().json(err.to_string())
   }
 }
 
 #[post("/save")]
-async fn save(state : web::Data<AppState>, employee : web::Json<Employee>) -> impl Responder{
+async fn save_employee(state : web::Data<AppState>, employee : web::Json<Employee>) -> impl Responder{
   let mut employee = employee.into_inner();
   match hash_password(employee.password){
     Ok(hashing) => employee.password = hashing,
     Err(err)    => return HttpResponse::NotFound().json(err.to_string())
   };
-  match employee::save(state, employee).await {
+  match save(&state, employee).await {
     Ok(emp)    => HttpResponse::Ok().json(emp),
     Err(err)   => HttpResponse::NotFound().json(err.to_string())
   }
@@ -41,33 +49,10 @@ struct Credentials{
   password: String
 }
 
-async fn get_or_save_db_shift(state : web::Data<AppState>) -> Option<DbShift>{
-  let now = get_relative_now();
-  let date = get_current_date(now);
-  let order = get_current_order(now);
-  if let Some(date) = date {
-    match find_db_shift_by_date_and_order(state.clone(), date, order.clone()).await {
-      Some(shift) => return Some(shift),
-      None        =>{
-        match save_db_shift(state, DbShift{
-          id: Uuid::new_v4(),
-          shift_date: date,
-          shift_order: order as i16
-        }).await {
-          Some(shift) => return Some(shift),
-          None        => return None
-        }
-      }
-    }
-  } else {
-    None
-  }
-}
-
 #[post("/emp")]
 async fn get_employee_by_id(state : web::Data<AppState>,
                id : web::Json<Uuid>) -> impl Responder{
-  match fetch_employee_by_id(state, id.into_inner()).await {
+  match fetch_employee_by_id(&state, id.into_inner()).await {
     Ok(result) => HttpResponse::NonAuthoritativeInformation().json(Some(result)),
     Err(_)     => HttpResponse::NonAuthoritativeInformation().json(None::<Employee>)
   }
@@ -78,13 +63,13 @@ async fn login(state : web::Data<AppState>,
                cred : web::Json<Credentials>) -> impl Responder{
   let Credentials{card_id,password} = cred.into_inner();
   let employee;
-  match employee::get_employee_by_card_id(state.clone(), card_id).await {
+  match get_employee_by_card_id(&state, card_id).await {
     Ok(result) => employee = result,
     Err(err)   => return HttpResponse::NotFound().json(err.to_string())
   }
   match verify_password(password, &employee.password) {
     Ok(result) => if result {
-        if let Some(shift) = get_or_save_db_shift(state).await {
+        if let Some(shift) = get_or_save_db_shift(&state).await {
           HttpResponse::Ok().json(Some((employee,shift.id)))
         } else {
           HttpResponse::NonAuthoritativeInformation().json(None::<(Employee,Uuid)>)

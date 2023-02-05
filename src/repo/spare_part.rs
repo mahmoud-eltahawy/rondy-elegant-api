@@ -4,9 +4,10 @@ use actix_web::web::Data;
 use sqlx::{query, query_as};
 use uuid::Uuid;
 
-use crate::{AppState, model::spare_part::SparePart};
+use crate::AppState;
+use rec::model::spare_part::SparePart;
 
-pub async fn find_all_spare_parts(state : Data<AppState>) -> Vec<SparePart> {
+pub async fn find_all_spare_parts(state : &Data<AppState>) -> Vec<SparePart> {
     let query = "
         select
             id,
@@ -19,7 +20,7 @@ pub async fn find_all_spare_parts(state : Data<AppState>) -> Vec<SparePart> {
     }
 }
 
-pub async fn fetch_spare_part_by_id(state : Data<AppState>,id : Uuid) -> Option<SparePart> {
+pub async fn fetch_spare_part_by_id(state : &Data<AppState>,id : Uuid) -> Option<SparePart> {
   let row = query_as!(SparePart,r#"
         select id,name
         from spare_part WHERE id = $1"#,id)
@@ -31,7 +32,7 @@ pub async fn fetch_spare_part_by_id(state : Data<AppState>,id : Uuid) -> Option<
 }
 
 
-pub async fn save_spare_part_to_shift_problem(state : Data<AppState>,shift_problem_id : &Uuid,spare_part_id : &Uuid) -> Result<(),Box<dyn Error>> {
+pub async fn save_spare_part_to_shift_problem(state : &Data<AppState>,shift_problem_id : &Uuid,spare_part_id : &Uuid) -> Result<(),Box<dyn Error>> {
   let row = query!("
     INSERT INTO shift_problem_spare_part(
         shift_problem_id,
@@ -49,7 +50,7 @@ struct SparePartId{
   spare_part_id : Uuid
 }
 
-pub async fn fetch_spare_parts_ids_by_shift_problem_id(state : Data<AppState>,
+pub async fn fetch_spare_parts_ids_by_shift_problem_id(state : &Data<AppState>,
                             shift_problem_id : &Uuid) -> Result<Vec<Uuid>,Box<dyn Error>> {
   let row = query_as!(SparePartId,"
     SELECT spare_part_id FROM shift_problem_spare_part WHERE shift_problem_id = $1",

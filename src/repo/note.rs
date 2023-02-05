@@ -4,9 +4,10 @@ use actix_web::web::Data;
 use sqlx::{query, query_as};
 use uuid::Uuid;
 
-use crate::{AppState, model::problem_detail::Note};
+use crate::AppState;
+use rec::model::shift_problem::Note;
 
-pub async fn save_note_to_shift_problem(state : Data<AppState>,
+pub async fn save_note_to_shift_problem(state : &Data<AppState>,
                   shift_problem_id : &Uuid,note : Note) -> Result<(),Box<dyn Error>> {
   let Note{id,content} = note;
   let row = query!("
@@ -23,7 +24,7 @@ pub async fn save_note_to_shift_problem(state : Data<AppState>,
   }
 }
 
-pub async fn fetch_note_by_shift_problem_id(state : Data<AppState>,
+pub async fn fetch_note_by_shift_problem_id(state : &Data<AppState>,
                         shift_problem_id : &Uuid) -> Option<Note> {
   let row = query_as!(Note,r#"
     SELECT id ,content FROM note WHERE shift_problem_id = $1;"#,shift_problem_id)

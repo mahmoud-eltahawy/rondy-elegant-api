@@ -2,9 +2,10 @@ use actix_web::web::Data;
 use sqlx::query_as;
 use uuid::Uuid;
 
-use crate::{AppState, model::machine::Machine};
+use crate::AppState;
+use rec::model::machine::Machine;
 
-pub async fn find_all_machines(state : Data<AppState>) -> Vec<Machine> {
+pub async fn find_all_machines(state : &Data<AppState>) -> Vec<Machine> {
     let query = "
         select
             id,
@@ -17,7 +18,7 @@ pub async fn find_all_machines(state : Data<AppState>) -> Vec<Machine> {
     }
 }
 
-pub async fn fetch_machine_by_id(state : Data<AppState>,id : Uuid) -> Option<Machine> {
+pub async fn fetch_machine_by_id(state : &Data<AppState>,id : Uuid) -> Option<Machine> {
   let row = query_as!(Machine,r#"
         select id,name
         from machine WHERE id = $1"#,id)

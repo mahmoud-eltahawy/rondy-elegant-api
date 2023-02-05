@@ -7,16 +7,17 @@ edition = "2021"
 
 [dependencies]
 actix-web = "^4"
-uuid = { version = "^1", features = ["v4", "serde"] }
 serde = "1.0.8"
 serde_derive = "1.0.8"
 serde_json = "1.0.2"
 log = "^0.4"
 env_logger = "^0.10"
 sqlx = { version = "^0.6", features = [ "runtime-actix-native-tls" , "postgres", "chrono", "uuid", "json" ] }
+uuid = { version = "^1", features = ["v4", "serde"] }
 dotenv = "^0.15"
 chrono = { version = "^0.4", features = ["serde"]}
 bcrypt = "0.13.0"
+rec = {path = "../rec", version="0.1.0"}
 
 [profile.dev.package.sqlx-macros]
 opt-level = 3

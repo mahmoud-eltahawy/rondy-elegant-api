@@ -1,8 +1,6 @@
-mod model;
 mod service;
 mod repo;
 mod config;
-mod timer;
 
 use config::{
   get_config_postgres_url,

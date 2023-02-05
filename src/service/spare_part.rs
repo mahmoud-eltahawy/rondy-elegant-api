@@ -13,11 +13,11 @@ pub fn scope() -> Scope{
 
 #[get("/all")]
 async fn get_all(state : Data<AppState>) -> impl Responder{
-  HttpResponse::Ok().json(find_all_spare_parts(state).await)
+  HttpResponse::Ok().json(find_all_spare_parts(&state).await)
 }
 
 
 #[post("/part")]
 async fn get_spare_part_by_id(state : Data<AppState>,id :web::Json<Uuid>) -> impl Responder{
-  HttpResponse::Ok().json(fetch_spare_part_by_id(state,id.into_inner()).await)
+  HttpResponse::Ok().json(fetch_spare_part_by_id(&state,id.into_inner()).await)
 }
