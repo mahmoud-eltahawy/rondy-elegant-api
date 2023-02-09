@@ -5,7 +5,7 @@ use sqlx::{query, query_as};
 use uuid::Uuid;
 
 use crate::AppState;
-use rec::model::shift_problem::Note;
+use rec::model::note::Note;
 
 pub async fn save_note_to_shift_problem(state : &Data<AppState>,
                   shift_problem_id : &Uuid,note : Note) -> Result<(),Box<dyn Error>> {
