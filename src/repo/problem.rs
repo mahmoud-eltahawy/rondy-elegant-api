@@ -7,23 +7,20 @@ use uuid::Uuid;
 use crate::AppState;
 use rec::model::problem::Probelm;
 
-pub async fn find_all_probelms(state : &Data<AppState>) -> Vec<Probelm> {
-    let query = "
-        select
-            id,
-            title,
-            description
-        from problem
-                ";
-    match sqlx::query_as::<_, Probelm>(query).fetch_all(&state.db).await {
-        Ok(problems) => problems,
-        Err(_) => Vec::new()
-    }
+pub async fn fetch_problem_by_department_id(state : &Data<AppState>,id : Uuid) -> Option<Vec<Probelm>> {
+  let row = query_as!(Probelm,r#"
+        select id,writer_id,department_id,title ,description
+        from problem WHERE department_id = $1"#,id)
+    .fetch_all(&state.db);
+  match row.await {
+    Ok(problems) =>Some(problems),
+    Err(_) => None
+  }
 }
 
 pub async fn fetch_problem_by_id(state : &Data<AppState>,id : Uuid) -> Option<Probelm> {
   let row = query_as!(Probelm,r#"
-        select id,title ,description
+        select id,writer_id,department_id,title ,description
         from problem WHERE id = $1"#,id)
     .fetch_one(&state.db);
   match row.await {
@@ -48,10 +45,11 @@ pub async fn save_problem_to_shift_problem(state : &Data<AppState>,shift_problem
 }
 
 pub async fn save(state : &Data<AppState>,problem : Probelm) -> Result<(),Box<dyn Error>> {
-  let Probelm{id,title,description} = problem;
+  let Probelm{id,writer_id,department_id,title,description} = problem;
   let row = query!("
-    INSERT INTO problem(id,title,description) VALUES($1,$2,$3);",
-    id,title,description)
+    INSERT INTO problem(id,writer_id,department_id,title,description)
+    VALUES($1,$2,$3,$4,$5);",
+    id,writer_id,department_id,title,description)
     .execute(&state.db);
   match row.await {
     Ok(_) => Ok(()),

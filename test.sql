@@ -2,25 +2,6 @@
 ---------------------------------------------------------------------------------
 ------------------------------------- testing data --------------------------------------
 ---------------------------------------------------------------------------------
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 1','وصف 1');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 2','وصف 2');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 3','وصف 3');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 4','وصف 4');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 5','وصف 5');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 6','وصف 6');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 7','وصف 7');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 8','وصف 8');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 9','وصف 9');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 11','وصف 11');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 12','وصف 12');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 13','وصف 13');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 14','وصف 14');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 15','وصف 15');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 16','وصف 16');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 17','وصف 17');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 18','وصف 18');
-insert into problem (id,title,description) values(gen_random_uuid(),'مشكلة 19','وصف 19');
-
 insert into spare_part(id,"name") values(gen_random_uuid(),'قطعة 1');
 insert into spare_part(id,"name") values(gen_random_uuid(),'قطعة 2');
 insert into spare_part(id,"name") values(gen_random_uuid(),'قطعة 3');

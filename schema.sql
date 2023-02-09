@@ -44,9 +44,13 @@ CREATE TABLE IF NOT EXISTS spare_part(
 );
 
 CREATE TABLE IF NOT EXISTS problem(
-       id                   UUID              PRIMARY KEY,
-       title                VARCHAR(70)       NOT NULL,
-       description          VARCHAR(350)      NOT NULL
+       id                         UUID                         PRIMARY KEY,
+       writer_id                  UUID                         NOT NULL,
+       department_id              UUID                         NOT NULL,
+       title                      VARCHAR(70)                  NOT NULL,
+       description                VARCHAR(350)                 NOT NULL,
+       FOREIGN KEY(writer_id)     REFERENCES employee(id)      ON DELETE CASCADE,
+       FOREIGN KEY(department_id) REFERENCES department(id)    ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS shift (

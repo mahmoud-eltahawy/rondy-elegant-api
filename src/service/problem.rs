@@ -6,23 +6,22 @@ use uuid::Uuid;
 use crate::{
   AppState,
   repo::problem::{
-    find_all_probelms,
     fetch_problem_by_id,
-    save
+    save, fetch_problem_by_department_id
   },
 };
 use rec::model::problem::Probelm;
 
 pub fn scope() -> Scope{
   web::scope("/problem")
-    .service(get_all)
+    .service(get_by_department_id)
     .service(get_problem_by_id)
     .service(save_problem)
 }
 
 #[get("/all")]
-async fn get_all(state : Data<AppState>) -> impl Responder{
-  HttpResponse::Ok().json(find_all_probelms(&state).await)
+async fn get_by_department_id(state : Data<AppState>,id : web::Json<Uuid>) -> impl Responder{
+  HttpResponse::Ok().json(fetch_problem_by_department_id(&state,id.into_inner()).await)
 }
 
 #[post("/problem")]
