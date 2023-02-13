@@ -45,9 +45,14 @@ async fn main() -> std::io::Result<()> {
 }
 
 async fn connect_db_pool() -> Pool<Postgres>{
-  PgPoolOptions::new()
+  let p = PgPoolOptions::new()
       .max_connections(10)
       .connect(&get_config_postgres_url())
       .await
-      .expect("failed to connect db")
+      .expect("failed to connect db");
+
+  sqlx::migrate!("db/migrations")
+    .run(&p).await.expect("migration failed");
+
+    p
 }

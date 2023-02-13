@@ -1,7 +1,6 @@
 use actix_web::{
     get,web, Responder, HttpResponse, Scope, post};
 use bcrypt::BcryptResult;
-use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 
 use crate::{AppState,
@@ -9,15 +8,17 @@ use crate::{AppState,
               shift::get_or_save_db_shift,
               employee::{
                 fetch_employee_by_id,
-                find_all, save, get_employee_by_card_id
+                find_all, save, get_employee_by_card_id, update, delete
               }},
 };
-use rec::model::employee::Employee;
+use rec::model::employee::{Employee, Cred};
 
 pub fn scope() -> Scope{
   web::scope("/emp")
     .service(all)
     .service(save_employee)
+    .service(update_employee)
+    .service(delete_employee)
     .service(get_employee_by_id)
     .service(login)
 }
@@ -26,58 +27,72 @@ pub fn scope() -> Scope{
 async fn all(state : web::Data<AppState>) -> impl Responder{
   match find_all(&state).await {
     Ok(result) => HttpResponse::Ok().json(result),
-    Err(err)   => HttpResponse::NotFound().json(err.to_string())
+    Err(_)   => HttpResponse::InternalServerError().into()
   }
 }
 
 #[post("/save")]
 async fn save_employee(state : web::Data<AppState>, employee : web::Json<Employee>) -> impl Responder{
-  let mut employee = employee.into_inner();
-  match hash_password(employee.password){
-    Ok(hashing) => employee.password = hashing,
-    Err(err)    => return HttpResponse::NotFound().json(err.to_string())
+  let employee = match hash_employee(employee.into_inner()) {
+    Ok(employee) => employee,
+    Err(_)    => return HttpResponse::InternalServerError().into()
   };
+
   match save(&state, employee).await {
-    Ok(emp)    => HttpResponse::Ok().json(emp),
-    Err(err)   => HttpResponse::NotFound().json(err.to_string())
+    Ok(_)    => HttpResponse::Ok(),
+    Err(_)   => HttpResponse::InternalServerError()
   }
 }
 
-#[derive(Serialize,Deserialize)]
-struct Credentials{
-  card_id : i16,
-  password: String
+#[post("/update")]
+async fn update_employee(state : web::Data<AppState>, employee : web::Json<Employee>) -> impl Responder{
+  let employee = match hash_employee(employee.into_inner()) {
+    Ok(employee) => employee,
+    Err(_)    => return HttpResponse::InternalServerError()
+  };
+  match update(&state, employee).await {
+    Ok(_)    => HttpResponse::Ok(),
+    Err(_)   => HttpResponse::InternalServerError()
+  }
+}
+
+#[post("/delete")]
+async fn delete_employee(state : web::Data<AppState>, id : web::Json<Uuid>) -> impl Responder{
+  match delete(&state, id.into_inner()).await {
+    Ok(_)    => HttpResponse::Ok(),
+    Err(_)   => HttpResponse::InternalServerError()
+  }
 }
 
 #[post("/emp")]
 async fn get_employee_by_id(state : web::Data<AppState>,
                id : web::Json<Uuid>) -> impl Responder{
   match fetch_employee_by_id(&state, id.into_inner()).await {
-    Ok(result) => HttpResponse::NonAuthoritativeInformation().json(Some(result)),
-    Err(_)     => HttpResponse::NonAuthoritativeInformation().json(None::<Employee>)
+    Ok(result) => HttpResponse::Ok().json(result),
+    Err(_)     => HttpResponse::InternalServerError().into()
   }
 }
 
 #[post("/login")]
 async fn login(state : web::Data<AppState>,
-               cred : web::Json<Credentials>) -> impl Responder{
-  let Credentials{card_id,password} = cred.into_inner();
+               cred : web::Json<Cred>) -> impl Responder{
+  let Cred{card_id,password} = cred.into_inner();
   let employee;
   match get_employee_by_card_id(&state, card_id).await {
     Ok(result) => employee = result,
-    Err(err)   => return HttpResponse::NotFound().json(err.to_string())
+    Err(_)   => return HttpResponse::InternalServerError().into()
   }
   match verify_password(password, &employee.password) {
     Ok(result) => if result {
         if let Some(shift) = get_or_save_db_shift(&state).await {
-          HttpResponse::Ok().json(Some((employee,shift.id)))
+          HttpResponse::Ok().json((employee,shift.id))
         } else {
-          HttpResponse::NonAuthoritativeInformation().json(None::<(Employee,Uuid)>)
+          HttpResponse::InternalServerError().into()
         }
       } else {
-        HttpResponse::NonAuthoritativeInformation().json(None::<(Employee,Uuid)>)
+        HttpResponse::NonAuthoritativeInformation().into()
       },
-    Err(err)   => return HttpResponse::NotFound().json(err.to_string())
+    Err(_)   => return HttpResponse::InternalServerError().into()
   }
 }
 
@@ -87,4 +102,29 @@ fn  hash_password(password : String) -> BcryptResult<String>{
 
 fn  verify_password(password : String,hash : &str) -> BcryptResult<bool>{
   bcrypt::verify(password, hash)
+}
+
+fn hash_employee(employee : Employee) -> Result<Employee,String>{
+  let Employee { id,
+                 department_id,
+                 position,
+                 first_name,
+                 middle_name,
+                 last_name,
+                 card_id,
+                 password
+  } = employee;
+  match hash_password(password){
+    Ok(password) =>Ok(Employee {
+      id,
+      department_id,
+      position,
+      first_name,
+      middle_name,
+      last_name,
+      card_id,
+      password
+    }),
+    Err(err)    => Err(err.to_string())
+  }
 }

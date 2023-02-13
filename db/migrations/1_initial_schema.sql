@@ -1,5 +1,13 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+CREATE TABLE IF NOT EXISTS cud_version(
+       version_number              BIGSERIAL          PRIMARY KEY,
+       target_id                   UUID               NOT NULL,
+       other_target_id             UUID,
+       target_table                SMALLINT           NOT NULL,
+       cud                         SMALLINT           NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS department(
        id                 UUID               PRIMARY KEY,
        boss_id            UUID,
@@ -105,12 +113,7 @@ CREATE TABLE IF NOT EXISTS shift_problem_spare_part(
        FOREIGN KEY(shift_problem_id) REFERENCES shift_problem(id) ON DELETE CASCADE
 );
 
----------------------------------------------------------------------------------
-------------------------------------- data --------------------------------------
----------------------------------------------------------------------------------
-
-INSERT INTO department(id,name) VALUES('00000000-0000-0000-0000-000000000000','قسم التحكم');
-INSERT INTO employee(id,department_id,position,first_name,middle_name,last_name,card_id,password)
-VALUES('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-000000000000',
-'SUPER_ADMIN','elegant','rondy','er',0,'$2a$08$1hNk2wV1rsnhQmEr2zmlw.sSCM5XzaW2/iUsykVvGpVHO0tx5o5Ki');
-UPDATE department SET boss_id = '00000000-0000-0000-0000-000000000000' WHERE id = '00000000-0000-0000-0000-000000000000';
+INSERT INTO cud_version(target_id,other_target_id,target_table,cud)
+SELECT '00000000-0000-0000-0000-000000000000',
+'00000000-0000-0000-0000-000000000000',0,0
+WHERE (SELECT count(version_number) from cud_version) = 0;
