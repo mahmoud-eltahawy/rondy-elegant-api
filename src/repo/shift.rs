@@ -82,7 +82,6 @@ async fn save_db_shift(state : &Data<AppState>,shift : DbShift) -> Option<Shift>
             Ok(_) => Shift::new(shift),
             Err(_) => None
           }
-
         },
         Err(_) => None
     }

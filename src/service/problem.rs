@@ -1,32 +1,29 @@
 use actix_web::{
-    get, post,
-    web::{Data, self}, Responder, HttpResponse, Scope};
+    post,web::{Data, self}, Responder, HttpResponse, Scope};
 use uuid::Uuid;
 
 use crate::{
   AppState,
-  repo::problem::{
+  repo::{problem::{
     fetch_problem_by_id,
-    save, fetch_problem_by_department_id, update, delete
-  },
+    save, update, delete
+  }, syncing::record_version},
 };
-use rec::model::problem::Probelm;
+use rec::{
+  model::problem::Probelm,
+  crud_sync::{
+    CudVersion,
+    Cud,
+    Table
+  }
+};
 
 pub fn scope() -> Scope{
   web::scope("/problem")
-    .service(get_by_department_id)
     .service(get_problem_by_id)
     .service(save_problem)
     .service(update_problem)
     .service(delete_problem)
-}
-
-#[get("/all")]
-async fn get_by_department_id(state : Data<AppState>,id : web::Json<Uuid>) -> impl Responder{
-  match fetch_problem_by_department_id(&state,id.into_inner()).await{
-    Some(problems) => HttpResponse::Ok().json(problems),
-    None           => HttpResponse::InternalServerError().into()
-  }
 }
 
 #[post("/problem")]
@@ -39,24 +36,60 @@ async fn get_problem_by_id(state : Data<AppState>,id : web::Json<Uuid>) -> impl 
 
 #[post("/save")]
 async fn save_problem(state : Data<AppState>,problem : web::Json<Probelm>) -> impl Responder{
-  match save(&state,problem.into_inner()).await {
-    Ok(_) => HttpResponse::Ok(),
+  let problem = problem.into_inner();
+  match save(&state,&problem).await {
+    Ok(_) => {
+      match record_version(&state, CudVersion{
+        cud : Cud::Create,
+        target_table : Table::Problem,
+        version_number : 0,
+        target_id : problem.id,
+        other_target_id: None
+      }).await {
+        Ok(_) => HttpResponse::Ok(),
+        Err(_) => HttpResponse::InternalServerError()
+      }
+    },
     Err(_) => HttpResponse::InternalServerError()
   }
 }
 
 #[post("/update")]
 async fn update_problem(state : Data<AppState>,problem : web::Json<Probelm>) -> impl Responder{
-  match update(&state,problem.into_inner()).await {
-    Ok(_) => HttpResponse::Ok(),
+  let problem = problem.into_inner();
+  match update(&state,&problem).await {
+    Ok(_) => {
+      match record_version(&state, CudVersion{
+        cud : Cud::Update,
+        target_table : Table::Problem,
+        version_number : 0,
+        target_id : problem.id,
+        other_target_id: None
+      }).await {
+        Ok(_) => HttpResponse::Ok(),
+        Err(_) => HttpResponse::InternalServerError()
+      }
+    },
     Err(_) => HttpResponse::InternalServerError()
   }
 }
 
 #[post("/delete")]
 async fn delete_problem(state : Data<AppState>,id : web::Json<Uuid>) -> impl Responder{
-  match delete(&state,id.into_inner()).await {
-    Ok(_) => HttpResponse::Ok(),
+  let id = id.into_inner();
+  match delete(&state,&id).await {
+    Ok(_) => {
+      match record_version(&state, CudVersion{
+        cud : Cud::Delete,
+        target_table : Table::Problem,
+        version_number : 0,
+        target_id : id,
+        other_target_id: None
+      }).await {
+        Ok(_) => HttpResponse::Ok(),
+        Err(_) => HttpResponse::InternalServerError()
+      }
+    },
     Err(_) => HttpResponse::InternalServerError()
   }
 }

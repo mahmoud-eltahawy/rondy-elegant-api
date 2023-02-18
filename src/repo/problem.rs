@@ -5,27 +5,7 @@ use sqlx::{query, query_as};
 use uuid::Uuid;
 
 use crate::AppState;
-use rec::{
-  model::problem::Probelm,
-  crud_sync::{
-    Cud,
-    CudVersion,
-    Table
-  }
-};
-
-use super::syncing::record_version;
-
-pub async fn fetch_problem_by_department_id(state : &Data<AppState>,id : Uuid) -> Option<Vec<Probelm>> {
-  let row = query_as!(Probelm,r#"
-        select id,writer_id,department_id,title ,description
-        from problem WHERE department_id = $1"#,id)
-    .fetch_all(&state.db);
-  match row.await {
-    Ok(problems) =>Some(problems),
-    Err(_) => None
-  }
-}
+use rec::model::problem::Probelm;
 
 pub async fn fetch_problem_by_id(state : &Data<AppState>,id : Uuid) -> Option<Probelm> {
   let row = query_as!(Probelm,r#"
@@ -39,7 +19,7 @@ pub async fn fetch_problem_by_id(state : &Data<AppState>,id : Uuid) -> Option<Pr
 }
 
 
-pub async fn save(state : &Data<AppState>,problem : Probelm) -> Result<(),Box<dyn Error>> {
+pub async fn save(state : &Data<AppState>,problem : &Probelm) -> Result<(),Box<dyn Error>> {
   let Probelm{id,writer_id,department_id,title,description} = problem;
   let row = query!("
     INSERT INTO problem(id,writer_id,department_id,title,description)
@@ -47,68 +27,35 @@ pub async fn save(state : &Data<AppState>,problem : Probelm) -> Result<(),Box<dy
     id,writer_id,department_id,title,description)
     .execute(&state.db);
   match row.await {
-    Ok(_) =>{
-      match record_version(state, CudVersion{
-        cud : Cud::Create,
-        target_table : Table::Problem,
-        version_number : 0,
-        target_id : id,
-        other_target_id: None
-      }).await {
-        Ok(_) => Ok(()),
-        Err(err) => Err(err.into())
-      }
-    },
+    Ok(_) =>Ok(()),
     Err(err) => Err(err.into())
   }
 }
 
-pub async fn update(state : &Data<AppState>,problem : Probelm) -> Result<(),Box<dyn Error>> {
+pub async fn update(state : &Data<AppState>,problem : &Probelm) -> Result<(),Box<dyn Error>> {
   let Probelm{id,writer_id,department_id,title,description} = problem;
   let row = query!("
     UPDATE problem SET
-    writer_id = $2,
+    writer_id     = $2,
     department_id = $3,
-    title = $4,
-    description = $5
-    WHERE id = $1;",
+    title         = $4,
+    description   = $5
+    WHERE id      = $1;",
     id,writer_id,department_id,title,description)
     .execute(&state.db);
   match row.await {
-    Ok(_) =>{
-      match record_version(state, CudVersion{
-        cud : Cud::Update,
-        target_table : Table::Problem,
-        version_number : 0,
-        target_id : id,
-        other_target_id: None
-      }).await {
-        Ok(_) => Ok(()),
-        Err(err) => Err(err.into())
-      }
-    },
+    Ok(_) => Ok(()),
     Err(err) => Err(err.into())
   }
 }
 
-pub async fn delete(state : &Data<AppState>,id : Uuid) -> Result<(),Box<dyn Error>> {
+pub async fn delete(state : &Data<AppState>,id : &Uuid) -> Result<(),Box<dyn Error>> {
   let row = query!("
     DELETE FROM problem
     WHERE id = $1;",
     id).execute(&state.db);
   match row.await {
-    Ok(_) =>{
-      match record_version(state, CudVersion{
-        cud : Cud::Delete,
-        target_table : Table::Problem,
-        version_number : 0,
-        target_id : id,
-        other_target_id: None
-      }).await {
-        Ok(_) => Ok(()),
-        Err(err) => Err(err.into())
-      }
-    },
+    Ok(_) =>Ok(()),
     Err(err) => Err(err.into())
   }
 }

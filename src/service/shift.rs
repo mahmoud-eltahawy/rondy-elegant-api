@@ -1,13 +1,24 @@
 use actix_web::{Scope, web::{self, Data}, post, Responder, HttpResponse};
 use uuid::Uuid;
-use rec::model::shift::DateOrder;
-use crate::{AppState, repo::shift::{find_db_shift_by_id, remove_db_shift, find_db_shift_by_date_and_order}};
+use crate::{
+  AppState,
+  repo::shift::{
+    find_db_shift_by_id,
+    remove_db_shift,
+    get_or_save_db_shift
+  }
+};
 
 pub fn scope() -> Scope{
   web::scope("/shift")
+    .service(save_shift)
     .service(delete_shift)
     .service(get_shift_by_id)
-    .service(get_shift_by)
+}
+
+#[post("/save-or")]
+async fn save_shift(state : web::Data<AppState>) -> impl Responder{
+  HttpResponse::Ok().json(get_or_save_db_shift(&state).await)
 }
 
 #[post("/delete")]
@@ -21,14 +32,6 @@ async fn delete_shift(state : Data<AppState>,id :web::Json<Uuid>) -> impl Respon
 #[post("/shift")]
 async fn get_shift_by_id(state : Data<AppState>,id :web::Json<Uuid>) -> impl Responder{
   match find_db_shift_by_id(&state,id.into_inner()).await{
-    Some(shift) => HttpResponse::Ok().json(shift),
-    None        => HttpResponse::InternalServerError().into()
-  }
-}
-
-#[post("/shift-by")]
-async fn get_shift_by(state : Data<AppState>,od :web::Json<DateOrder>) -> impl Responder{
-  match find_db_shift_by_date_and_order(&state,od.into_inner()).await{
     Some(shift) => HttpResponse::Ok().json(shift),
     None        => HttpResponse::InternalServerError().into()
   }
