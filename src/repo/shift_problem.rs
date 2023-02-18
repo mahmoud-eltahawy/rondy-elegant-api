@@ -18,8 +18,6 @@ use rec::{
 };
 
 use super::{
-    problem::fetch_problems_ids_by_shift_problem_id,
-    spare_part::fetch_spare_parts_ids_by_shift_problem_id,
     note::fetch_note_by_shift_problem_id,
     employee::get_employee_department_id_by_id,
     syncing::record_version,
@@ -287,4 +285,27 @@ async fn db_to_minimal_shift_problem(state : &Data<AppState>,
       spare_parts_ids,
       note
     })
+}
+
+async fn fetch_problems_ids_by_shift_problem_id(state : &Data<AppState>,
+                        shift_problem_id : &Uuid) -> Result<Vec<Uuid>,Box<dyn Error>> {
+  let row = query!("
+    SELECT problem_id FROM shift_problem_problem WHERE shift_problem_id = $1",
+    shift_problem_id).fetch_all(&state.db);
+  match row.await {
+    Ok(problems_ids_records) => Ok(problems_ids_records.into_iter().map(|p| {p.problem_id}).collect()),
+    Err(err) => Err(err.into())
+  }
+}
+
+pub async fn fetch_spare_parts_ids_by_shift_problem_id(state : &Data<AppState>,
+                            shift_problem_id : &Uuid) -> Result<Vec<Uuid>,Box<dyn Error>> {
+  let row = query!("
+    SELECT spare_part_id FROM shift_problem_spare_part WHERE shift_problem_id = $1",
+    shift_problem_id).fetch_all(&state.db);
+  match row.await {
+    Ok(spare_parts_ids_records) => Ok(spare_parts_ids_records
+                            .into_iter().map(|sp| {sp.spare_part_id}).collect()),
+    Err(err) => Err(err.into())
+  }
 }
