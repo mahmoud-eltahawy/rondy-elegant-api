@@ -1,6 +1,7 @@
 use actix_web::{web, Scope};
 
 mod shift_problem;
+mod department;
 mod spare_part;
 mod relations;
 mod employee;
@@ -12,6 +13,7 @@ mod shift;
 pub fn scopes() -> Scope {
   web::scope("/api")
         .service(shift_problem::scope())
+        .service(department::scope())
         .service(spare_part::scope())
         .service(employee::scope())
         .service(problem::scope())
