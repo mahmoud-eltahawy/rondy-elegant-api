@@ -32,8 +32,6 @@ CREATE TABLE IF NOT EXISTS employee(
        CONSTRAINT chk_employee_position CHECK(position in ('SUPER_ADMIN','ADMIN', 'SUPER_USER', 'USER'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_of_employee_card_id ON employee(card_id);
-
 ALTER TABLE IF EXISTS department
 ADD FOREIGN KEY(boss_id)
 REFERENCES employee(id)
@@ -57,6 +55,7 @@ CREATE TABLE IF NOT EXISTS problem(
        department_id              UUID                         NOT NULL,
        title                      VARCHAR(70)                  NOT NULL,
        description                VARCHAR(350)                 NOT NULL,
+       CONSTRAINT unique_problem_title UNIQUE(title),
        FOREIGN KEY(writer_id)     REFERENCES employee(id)      ON DELETE CASCADE,
        FOREIGN KEY(department_id) REFERENCES department(id)    ON DELETE CASCADE
 );

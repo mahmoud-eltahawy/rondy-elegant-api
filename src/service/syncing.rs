@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use actix_web::{
     web::{Data, self}, Responder, HttpResponse, Scope, post};
 use rec::crud_sync::CudVersion;
@@ -20,18 +22,16 @@ async fn get_last_updates(state : Data<AppState>,version :web::Json<u64>) -> imp
 
   let mut versions : Vec<CudVersion> = Vec::new();
 
-  if version == current_version{
-    return HttpResponse::Ok().json(versions);
-  } else if version > current_version {
-    return HttpResponse::NotFound().into();
-  }
-
-  for v in version+1..=current_version{
-    match get_version(&state.db, v).await{
-        Ok(cv) => versions.push(cv),
-        Err(_) => ()
+  match version.cmp(&current_version) {
+    Ordering::Equal   => HttpResponse::Ok().json(versions),
+    Ordering::Greater => HttpResponse::NotFound().into(),
+    Ordering::Less    => {
+      for v in version+1..=current_version{
+        if let Ok(cv) = get_version(&state.db, v).await {
+          versions.push(cv)
+        }
+      }
+      HttpResponse::Ok().json(versions)
     }
   }
-
-  HttpResponse::Ok().json(versions)
 }

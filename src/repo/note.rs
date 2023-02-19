@@ -1,19 +1,86 @@
+use std::error::Error;
 
 use actix_web::web::Data;
-use sqlx::query_as;
+use sqlx::{query_as, query};
 use uuid::Uuid;
 
 use crate::AppState;
-use rec::model::note::Note;
+use rec::model::note::{Note, DbNote};
 
-
-pub async fn fetch_note_by_shift_problem_id(state : &Data<AppState>,
-                        shift_problem_id : &Uuid) -> Option<Note> {
-  let row = query_as!(Note,r#"
-    SELECT id ,content FROM note WHERE shift_problem_id = $1;"#,shift_problem_id)
+pub async fn fetch_note_by_id(state : &Data<AppState>,
+                        id : &Uuid) -> Option<DbNote> {
+  let row = query_as!(DbNote,r#"
+    SELECT * FROM note WHERE id = $1;"#,id)
     .fetch_one(&state.db);
   match row.await {
     Ok(name) => Some(name),
     Err(_) => None
+  }
+}
+
+pub async fn save_note_to_shift_problem(state : &Data<AppState>,
+                              note : &DbNote) -> Result<(),Box<dyn Error>> {
+  let DbNote{shift_id:_,id,shift_problem_id,content} = note;
+  let shift_problem_id = match shift_problem_id {
+    Some(id) => id,
+    None     => return Err("not qualified params".to_owned().into())
+  };
+  let row = query!("
+    INSERT INTO note(
+        id,
+        shift_problem_id,
+        content)
+    VALUES($1,$2,$3);",
+    id,shift_problem_id,content)
+    .execute(&state.db);
+  match row.await {
+    Ok(_) => Ok(()),
+    Err(err) => Err(err.into())
+  }
+}
+
+pub async fn save_note_to_shift(state : &Data<AppState>,
+                              note : &DbNote) -> Result<(),Box<dyn Error>> {
+  let DbNote{id,shift_id,shift_problem_id : _,content} = note;
+  let shift_id = match shift_id {
+    Some(id) => id,
+    None     => return Err("not qualified params".to_owned().into())
+  };
+  let row = query!("
+    INSERT INTO note(
+        id,
+        shift_id,
+        content)
+    VALUES($1,$2,$3);",
+    id,shift_id,content)
+    .execute(&state.db);
+  match row.await {
+    Ok(_) => Ok(()),
+    Err(err) => Err(err.into())
+  }
+}
+
+pub async fn update_note(state : &Data<AppState>,
+                              note : &Note) -> Result<(),Box<dyn Error>> {
+  let Note{id,content} = note;
+  let row = query!("
+    UPDATE note SET content = $2 WHERE id =$1;"
+    ,id,content)
+    .execute(&state.db);
+  match row.await {
+    Ok(_) => Ok(()),
+    Err(err) => Err(err.into())
+  }
+}
+
+pub async fn remove_note(state : &Data<AppState>,
+                              id : &Uuid) -> Result<(),Box<dyn Error>> {
+  let row = query!("
+    DELETE FROM note WHERE id = $1",
+    id)
+    .execute(&state.db);
+  match row.await {
+    Ok(_) => Ok(()),
+    Err(err) => Err(err.into())
   }
 }

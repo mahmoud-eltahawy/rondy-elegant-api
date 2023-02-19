@@ -32,7 +32,7 @@ pub fn scope() -> Scope{
 async fn save_employee(state : web::Data<AppState>, employee : web::Json<Employee>) -> impl Responder{
   let employee = match hash_employee(employee.into_inner()) {
     Ok(employee) => employee,
-    Err(_)    => return HttpResponse::InternalServerError().into()
+    Err(_)    => return HttpResponse::InternalServerError()
   };
 
   match save(&state, &employee).await {

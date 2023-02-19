@@ -77,13 +77,3 @@ pub async fn fetch_employee_by_id(state : &Data<AppState>,id : Uuid) -> Result<E
     Err(err) => Err(err)
   }
 }
-
-pub async fn get_employee_department_id_by_id(state : &Data<AppState>,id : Uuid) -> Result<Uuid,Error> {
-  let row = query!(r#"
-      select department_id from employee where id = $1"#,id)
-    .fetch_one(&state.db);
-  match row.await {
-    Ok(record) => Ok(record.department_id),
-    Err(err) => Err(err)
-  }
-}
