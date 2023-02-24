@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
 use actix_web::{
-    web::{Data, self}, Responder, HttpResponse, Scope, post};
+    web::{Data, self}, Responder, HttpResponse, Scope, get};
 use rec::crud_sync::CudVersion;
 
 use crate::{AppState, repo::syncing::{get_version, last_version}};
@@ -12,8 +12,8 @@ pub fn scope() -> Scope{
 }
 
 
-#[post("/update")]
-async fn get_last_updates(state : Data<AppState>,version :web::Json<u64>) -> impl Responder{
+#[get("/{version}")]
+async fn get_last_updates(state : Data<AppState>,version :web::Path<u64>) -> impl Responder{
   let version = version.into_inner();
   let current_version = match last_version(&state.db).await {
     Ok(v) => v,

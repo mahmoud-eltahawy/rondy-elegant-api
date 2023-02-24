@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS problem(
        department_id              UUID                         NOT NULL,
        title                      VARCHAR(70)                  NOT NULL,
        description                VARCHAR(350)                 NOT NULL,
-       CONSTRAINT unique_problem_title UNIQUE(title),
+       CONSTRAINT unique_department_problem UNIQUE(title,department_id),
        FOREIGN KEY(writer_id)     REFERENCES employee(id)      ON DELETE CASCADE,
        FOREIGN KEY(department_id) REFERENCES department(id)    ON DELETE CASCADE
 );

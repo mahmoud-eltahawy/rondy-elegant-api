@@ -1,26 +1,9 @@
-use actix_web::{web, Scope};
-
-mod shift_problem;
-mod department;
-mod spare_part;
-mod relations;
-mod employee;
-mod problem;
-mod machine;
-mod syncing;
-mod shift;
-mod note;
-
-pub fn scopes() -> Scope {
-  web::scope("/api")
-        .service(shift_problem::scope())
-        .service(department::scope())
-        .service(spare_part::scope())
-        .service(relations::scope())
-        .service(employee::scope())
-        .service(problem::scope())
-        .service(machine::scope())
-        .service(syncing::scope())
-        .service(shift::scope())
-        .service(note::scope())
-}
+pub mod shift_problem;
+pub mod department;
+pub mod spare_part;
+pub mod employee;
+pub mod problem;
+pub mod machine;
+pub mod syncing;
+pub mod shift;
+pub mod note;

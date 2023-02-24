@@ -1,6 +1,6 @@
 use actix_web::{
   web::{self, Data},
-  Scope, post, HttpResponse, Responder,
+  Scope, post,get,delete,put, HttpResponse, Responder,
 };
 use rec::{crud_sync::{CudVersion,Table,Cud}, model::note::{DbNote, Note}};
 use uuid::Uuid;
@@ -28,15 +28,35 @@ pub fn scope() -> Scope{
     .service(delete)
 }
 
-#[post("/note")]
-async fn get_note_by_id(state : Data<AppState>,id :web::Json<Uuid>) -> impl Responder{
+#[get("/{id}")]
+async fn get_note_by_id(state : Data<AppState>,id :web::Path<Uuid>) -> impl Responder{
   match fetch_note_by_id(&state,&id.into_inner()).await{
     Some(note) => HttpResponse::Ok().json(note),
     None       => HttpResponse::InternalServerError().into()
   }
 }
 
-#[post("/p-save")]
+#[delete("/{id}")]
+async fn delete(state : Data<AppState>,id :web::Path<Uuid>) -> impl Responder{
+  let id = id.into_inner();
+  match remove_note(&state,&id).await {
+    Ok(_) => {
+      match record_version(&state, CudVersion{
+        cud : Cud::Delete,
+        target_table : Table::ShiftNote,
+        version_number : 0,
+        target_id : id,
+        other_target_id: None
+      }).await {
+        Ok(_) => HttpResponse::Ok(),
+        Err(_) => HttpResponse::InternalServerError()
+      }
+    },
+    Err(_) => HttpResponse::InternalServerError()
+  }
+}
+
+#[post("/problem")]
 async fn note_to_problem_save(state : Data<AppState>,note : web::Json<DbNote>) -> impl Responder{
   let note = note.into_inner();
   match save_note_to_shift_problem(&state,&note).await {
@@ -56,7 +76,7 @@ async fn note_to_problem_save(state : Data<AppState>,note : web::Json<DbNote>) -
   }
 }
 
-#[post("/s-save")]
+#[post("/shift")]
 async fn note_to_shift_save(state : Data<AppState>,note : web::Json<DbNote>) -> impl Responder{
   let note = note.into_inner();
   match save_note_to_shift(&state,&note).await {
@@ -76,7 +96,7 @@ async fn note_to_shift_save(state : Data<AppState>,note : web::Json<DbNote>) -> 
   }
 }
 
-#[post("/update")]
+#[put("/")]
 async fn update(state : Data<AppState>,note : web::Json<Note>) -> impl Responder{
   let note = note.into_inner();
   match update_note(&state,&note).await {
@@ -89,26 +109,6 @@ async fn update(state : Data<AppState>,note : web::Json<Note>) -> impl Responder
         other_target_id: None
       }).await {
         Ok(_)    => HttpResponse::Ok(),
-        Err(_) => HttpResponse::InternalServerError()
-      }
-    },
-    Err(_) => HttpResponse::InternalServerError()
-  }
-}
-
-#[post("/delete")]
-async fn delete(state : Data<AppState>,id : web::Json<Uuid>) -> impl Responder{
-  let id = id.into_inner();
-  match remove_note(&state,&id).await {
-    Ok(_) => {
-      match record_version(&state, CudVersion{
-        cud : Cud::Delete,
-        target_table : Table::ShiftNote,
-        version_number : 0,
-        target_id : id,
-        other_target_id: None
-      }).await {
-        Ok(_) => HttpResponse::Ok(),
         Err(_) => HttpResponse::InternalServerError()
       }
     },

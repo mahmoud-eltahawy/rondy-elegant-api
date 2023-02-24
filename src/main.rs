@@ -2,6 +2,8 @@ mod service;
 mod repo;
 mod config;
 
+use service::*;
+
 use config::{
   get_config_postgres_url,
   get_configs_server,
@@ -31,13 +33,22 @@ async fn main() -> std::io::Result<()> {
   dotenv().ok();
   set_debug_configs();
 
+
   let db_pool = connect_db_pool().await;
 
   HttpServer::new(move || {
-      App::new()
-          .app_data(Data::new(AppState{db: db_pool.clone()}))
-          .wrap(Logger::default())
-          .service(service::scopes())
+    App::new()
+      .app_data(Data::new(AppState{db: db_pool.clone()}))
+      .wrap(Logger::default())
+        .service(shift_problem::scope())
+        .service(department::scope())
+        .service(spare_part::scope())
+        .service(employee::scope())
+        .service(problem::scope())
+        .service(machine::scope())
+        .service(syncing::scope())
+        .service(shift::scope())
+        .service(note::scope())
   }).bind(get_configs_server())?
       .run()
       .await?;
