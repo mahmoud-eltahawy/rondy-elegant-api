@@ -68,27 +68,36 @@ CREATE TABLE IF NOT EXISTS shift (
        CONSTRAINT chk_shift_order CHECK(shift_order BETWEEN 0 AND 4)
 );
 
-CREATE TABLE IF NOT EXISTS shift_problem(
+CREATE TABLE IF NOT EXISTS department_shift (
        id                   UUID              PRIMARY KEY,
+       department_id        UUID              NOT NULL,
        shift_id             UUID              NOT NULL,
-       writer_id            UUID              NOT NULL,
-       maintainer_id        UUID              NOT NULL,
-       machine_id           UUID              NOT NULL,
-       begin_time           TIME              NOT NULL,
-       end_time             TIME              NOT NULL,
-       FOREIGN KEY(maintainer_id) REFERENCES employee(id) ON DELETE CASCADE,
-       FOREIGN KEY(writer_id) REFERENCES employee(id) ON DELETE CASCADE,
-       FOREIGN KEY(machine_id) REFERENCES machine(id) ON DELETE CASCADE,
-       FOREIGN KEY(shift_id) REFERENCES shift(id) ON DELETE CASCADE
+       CONSTRAINT unique_department_shift_id UNIQUE(department_id,shift_id),
+       FOREIGN KEY(department_id) REFERENCES department(id) ON DELETE CASCADE,
+       FOREIGN KEY(shift_id)      REFERENCES shift(id)      ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS shift_problem(
+       id                  UUID                 PRIMARY KEY,
+       shift_id            UUID                 NOT NULL,
+       writer_id           UUID                 NOT NULL,
+       maintainer_id       UUID                 NOT NULL,
+       machine_id          UUID                 NOT NULL,
+       begin_time          TIME                 NOT NULL,
+       end_time            TIME                 NOT NULL,
+       FOREIGN             KEY(maintainer_id)   REFERENCES employee(id)          ON DELETE CASCADE,
+       FOREIGN             KEY(writer_id)       REFERENCES employee(id)          ON DELETE CASCADE,
+       FOREIGN             KEY(machine_id)      REFERENCES machine(id)           ON DELETE CASCADE,
+       FOREIGN             KEY(shift_id)        REFERENCES department_shift(id)  ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS note(
-       id                   UUID              PRIMARY KEY,
-       shift_id             UUID,
-       shift_problem_id     UUID,
-       content              varchar(500)      NOT NULL,
-       FOREIGN KEY(shift_id) REFERENCES shift(id) ON DELETE CASCADE,
-       FOREIGN KEY(shift_problem_id) REFERENCES shift_problem(id) ON DELETE CASCADE,
+       id                  UUID                  PRIMARY KEY,
+       shift_id            UUID,
+       shift_problem_id    UUID,
+       content             varchar(500)          NOT NULL,
+       FOREIGN             KEY(shift_id)         REFERENCES department_shift(id)  ON DELETE CASCADE,
+       FOREIGN             KEY(shift_problem_id) REFERENCES shift_problem(id)     ON DELETE CASCADE,
        CONSTRAINT chk_note_home CHECK(
          shift_id IS NOT NULL AND shift_problem_id IS NULL
          OR

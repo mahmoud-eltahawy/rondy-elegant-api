@@ -1,3 +1,4 @@
+pub mod department_shift;
 pub mod shift_problem;
 pub mod department;
 pub mod spare_part;
@@ -6,5 +7,4 @@ pub mod employee;
 pub mod syncing;
 pub mod problem;
 pub mod machine;
-pub mod shift;
 pub mod note;

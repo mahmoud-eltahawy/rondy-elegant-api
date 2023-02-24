@@ -1,12 +1,7 @@
 use actix_web::{Scope, web::{self, Data}, post, Responder, HttpResponse};
 use uuid::Uuid;
 use crate::{
-  AppState,
-  repo::shift::{
-    find_db_shift_by_id,
-    remove_db_shift,
-    get_or_save_db_shift
-  }
+  AppState, repo::department_shift::{save_department_shift, remove_department_shift, find_shift_by_id, find_department_shift_by_id}
 };
 
 pub fn scope() -> Scope{
@@ -14,16 +9,20 @@ pub fn scope() -> Scope{
     .service(save_shift)
     .service(delete_shift)
     .service(get_shift_by_id)
+    .service(get_department_shift_by_id)
 }
 
-#[post("/save-or")]
-async fn save_shift(state : web::Data<AppState>) -> impl Responder{
-  HttpResponse::Ok().json(get_or_save_db_shift(&state).await)
+#[post("/save")]
+async fn save_shift(state : web::Data<AppState>,id : web::Json<Uuid>) -> impl Responder{
+  match save_department_shift(&state, id.into_inner()).await {
+    Ok(_)  => HttpResponse::Ok(),
+    Err(_) => HttpResponse::InternalServerError()
+  }
 }
 
 #[post("/delete")]
 async fn delete_shift(state : Data<AppState>,id :web::Json<Uuid>) -> impl Responder{
-  match remove_db_shift(&state,id.into_inner()).await {
+  match remove_department_shift(&state,id.into_inner()).await {
     Ok(_) => HttpResponse::Ok(),
     Err(_)  => HttpResponse::InternalServerError()
   }
@@ -31,8 +30,16 @@ async fn delete_shift(state : Data<AppState>,id :web::Json<Uuid>) -> impl Respon
 
 #[post("/shift")]
 async fn get_shift_by_id(state : Data<AppState>,id :web::Json<Uuid>) -> impl Responder{
-  match find_db_shift_by_id(&state,id.into_inner()).await{
-    Some(shift) => HttpResponse::Ok().json(shift),
-    None        => HttpResponse::InternalServerError().into()
+  match find_shift_by_id(&state,id.into_inner()).await{
+    Ok(Some(shift)) => HttpResponse::Ok().json(shift),
+    _               => HttpResponse::InternalServerError().into()
+  }
+}
+
+#[post("/dep-shift")]
+async fn get_department_shift_by_id(state : Data<AppState>,id :web::Json<Uuid>) -> impl Responder{
+  match find_department_shift_by_id(&state,id.into_inner()).await{
+    Ok(shift) => HttpResponse::Ok().json(shift),
+    Err(_)    => HttpResponse::InternalServerError().into()
   }
 }
