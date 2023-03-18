@@ -47,6 +47,28 @@ pub async fn update(state : &Data<AppState>,employee : &Employee) -> Result<(),E
   }
 }
 
+pub async fn down(state : &Data<AppState>,id : Uuid) -> Result<(),Error> {
+  let row = query!("
+    UPDATE employee SET
+    position = 'USER'
+    WHERE id = $1;",id).execute(&state.db);
+  match row.await {
+    Ok(_) =>Ok(()),
+    Err(err) => Err(err)
+  }
+}
+
+pub async fn up(state : &Data<AppState>,id : Uuid) -> Result<(),Error> {
+  let row = query!("
+    UPDATE employee SET
+    position = 'SUPER_USER'
+    WHERE id = $1;",id).execute(&state.db);
+  match row.await {
+    Ok(_) =>Ok(()),
+    Err(err) => Err(err)
+  }
+}
+
 pub async fn delete(state : &Data<AppState>,id : &Uuid) -> Result<(),Error> {
   let row = query!("
     DELETE FROM employee
@@ -74,6 +96,17 @@ pub async fn fetch_employee_by_id(state : &Data<AppState>,id : Uuid) -> Result<E
     .fetch_one(&state.db);
   match row.await {
     Ok(emp) => Ok(emp),
+    Err(err) => Err(err)
+  }
+}
+
+pub async fn fetch_employee_department_id_by_id(state : &Data<AppState>,id : &Uuid) -> Result<Uuid,Error> {
+  let row = query!(r#"
+    select department_id
+    from employee where id = $1"#,id)
+  .fetch_one(&state.db);
+  match row.await {
+    Ok(emp) => Ok(emp.department_id),
     Err(err) => Err(err)
   }
 }

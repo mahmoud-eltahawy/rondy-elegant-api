@@ -1,5 +1,6 @@
 pub mod department_shift;
 pub mod shift_problem;
+pub mod permissions;
 pub mod department;
 pub mod spare_part;
 pub mod relations;

@@ -29,7 +29,23 @@ CREATE TABLE IF NOT EXISTS employee(
        password           TEXT               NOT NULL,
        CONSTRAINT unique_employee_card_id UNIQUE(card_id),
        FOREIGN KEY(department_id) REFERENCES department(id) ON DELETE CASCADE,
-       CONSTRAINT chk_employee_position CHECK(position in ('SUPER_ADMIN','ADMIN', 'SUPER_USER', 'USER'))
+       CONSTRAINT chk_employee_position CHECK(position in ('SUPER_USER', 'USER'))
+);
+
+CREATE TABLE IF NOT EXISTS permissions(
+       id                                                      UUID               PRIMARY KEY,
+       write_department_problem                                BOOL               NOT NULL,
+       read_department_problems                                BOOL               NOT NULL,
+       modify_department_problems                              BOOL               NOT NULL,
+       define_problem                                          BOOL               NOT NULL,
+       access_history_department_problems                      BOOL               NOT NULL,
+       access_history_all_departments_problems                 BOOL               NOT NULL,
+       access_history_department_department_problems           BOOL               NOT NULL,
+       access_history_all_departments_department_problems      BOOL               NOT NULL,
+       access_history_machines                                 BOOL               NOT NULL,
+       access_history_spare_parts                              BOOL               NOT NULL,
+       access_history_employees                                BOOL               NOT NULL,
+       FOREIGN KEY(id) REFERENCES employee(id) ON DELETE CASCADE
 );
 
 ALTER TABLE IF EXISTS department

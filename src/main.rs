@@ -49,6 +49,7 @@ async fn main() -> std::io::Result<()> {
         .service(syncing::scope())
         .service(shift::scope())
         .service(note::scope())
+        .service(permissions::scope())
   }).bind(get_configs_server())?
       .run()
       .await?;

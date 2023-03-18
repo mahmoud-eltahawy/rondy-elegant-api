@@ -8,7 +8,7 @@ use crate::{
     fetch_employee_by_id,
     save,
     update,
-    delete
+    delete, up, down
   }, syncing::record_version}
 };
 use rec::{
@@ -24,6 +24,8 @@ pub fn scope() -> Scope{
   web::scope("/emp")
     .service(save_employee)
     .service(update_employee)
+    .service(up_employee)
+    .service(down_employee)
     .service(delete_employee)
     .service(get_employee_by_id)
 }
@@ -92,6 +94,46 @@ async fn update_employee(state : web::Data<AppState>, employee : web::Json<Emplo
         cud : Cud::Update,
         target_table : Table::Employee,
         target_id : employee.id,
+        other_target_id : None,
+        version_number : 0
+      }).await {
+        Ok(_) => HttpResponse::Ok(),
+        Err(_) => HttpResponse::InternalServerError()
+      }
+    } ,
+    Err(_)   => HttpResponse::InternalServerError()
+  }
+}
+
+#[get("/{id}/up")]
+async fn up_employee(state : web::Data<AppState>, id : web::Path<Uuid>) -> impl Responder{
+  let id = id.into_inner();
+  match up(&state,id).await {
+    Ok(_) => {
+      match record_version(&state, CudVersion{
+        cud : Cud::Update,
+        target_table : Table::Employee,
+        target_id : id,
+        other_target_id : None,
+        version_number : 0
+      }).await {
+        Ok(_) => HttpResponse::Ok(),
+        Err(_) => HttpResponse::InternalServerError()
+      }
+    } ,
+    Err(_)   => HttpResponse::InternalServerError()
+  }
+}
+
+#[get("/{id}/down")]
+async fn down_employee(state : web::Data<AppState>, id : web::Path<Uuid>) -> impl Responder{
+  let id = id.into_inner();
+  match down(&state,id).await {
+    Ok(_)    =>{
+      match record_version(&state, CudVersion{
+        cud : Cud::Update,
+        target_table : Table::Employee,
+        target_id : id,
         other_target_id : None,
         version_number : 0
       }).await {
