@@ -7,7 +7,7 @@ use uuid::Uuid;
 use crate::AppState;
 use rec::model::permissions::Permissions;
 
-pub async fn fetch_permissions_by_id(state : &Data<AppState>,id : Uuid) -> Option<Permissions> {
+pub async fn fetch_permissions_by_id(state : &Data<AppState>,id : Uuid) -> Option<Permissions<Uuid>> {
   let row = query_as!(Permissions,r#"
         select * from permissions WHERE id = $1"#,id)
     .fetch_one(&state.db);
@@ -41,7 +41,7 @@ pub async fn forbid_permission(state : &Data<AppState>,
   }
 }
 
-pub async fn save(state : &Data<AppState>,permissions : Permissions) -> Result<(),Box<dyn Error>> {
+pub async fn save(state : &Data<AppState>,permissions : Permissions<Uuid>) -> Result<(),Box<dyn Error>> {
   let Permissions{
       id,
       define_problem,
@@ -88,7 +88,7 @@ pub async fn save(state : &Data<AppState>,permissions : Permissions) -> Result<(
   }
 }
 
-pub async fn update(state : &Data<AppState>,permissions : Permissions) -> Result<(),Box<dyn Error>> {
+pub async fn update(state : &Data<AppState>,permissions : Permissions<Uuid>) -> Result<(),Box<dyn Error>> {
   let Permissions{
       id,
       define_problem,

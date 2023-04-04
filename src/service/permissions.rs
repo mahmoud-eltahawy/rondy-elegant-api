@@ -83,7 +83,7 @@ async fn forbid_permission_service(state : Data<AppState>,
 }
 
 #[post("/")]
-async fn save_permissions(state : Data<AppState>,permissions : web::Json<Permissions>) -> impl Responder{
+async fn save_permissions(state : Data<AppState>,permissions : web::Json<Permissions<Uuid>>) -> impl Responder{
   let permissions = permissions.into_inner();
   let permissions_id = permissions.id;
   match save(&state,permissions).await {
@@ -104,7 +104,7 @@ async fn save_permissions(state : Data<AppState>,permissions : web::Json<Permiss
 }
 
 #[put("/")]
-async fn update_permissions(state : Data<AppState>,permissions : web::Json<Permissions>) -> impl Responder{
+async fn update_permissions(state : Data<AppState>,permissions : web::Json<Permissions<Uuid>>) -> impl Responder{
   let permissions    = permissions.into_inner();
   let permissions_id = permissions.id;
   match update(&state,permissions).await {

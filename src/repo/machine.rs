@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::AppState;
 use rec::model::machine::Machine;
 
-pub async fn save(state : &Data<AppState>,machine : &Machine) -> Result<(),Error> {
+pub async fn save(state : &Data<AppState>,machine : &Machine<Uuid>) -> Result<(),Error> {
   let Machine{id,name} = machine;
   let row = query!("
     INSERT INTO machine(id,name)
@@ -19,7 +19,7 @@ pub async fn save(state : &Data<AppState>,machine : &Machine) -> Result<(),Error
   }
 }
 
-pub async fn update(state : &Data<AppState>,machine : &Machine) -> Result<(),Error> {
+pub async fn update(state : &Data<AppState>,machine : &Machine<Uuid>) -> Result<(),Error> {
   let Machine{id,name} = machine;
   let row = query!("
     UPDATE machine SET
@@ -48,7 +48,7 @@ pub async fn delete(state : &Data<AppState>,id : &Uuid) -> Result<(),Error> {
   }
 }
 
-pub async fn fetch_machine_by_id(state : &Data<AppState>,id : Uuid) -> Option<Machine> {
+pub async fn fetch_machine_by_id(state : &Data<AppState>,id : Uuid) -> Option<Machine<Uuid>> {
   let row = query_as!(Machine,r#"
         select id,name
         from machine WHERE id = $1"#,id)

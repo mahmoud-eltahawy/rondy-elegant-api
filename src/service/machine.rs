@@ -49,7 +49,7 @@ async fn delete_machine(state : Data<AppState>,id :web::Path<Uuid>) -> impl Resp
 }
 
 #[post("/")]
-async fn save_machine(state : Data<AppState>,machine :web::Json<Machine>) -> impl Responder{
+async fn save_machine(state : Data<AppState>,machine :web::Json<Machine<Uuid>>) -> impl Responder{
   let machine = machine.into_inner();
   match save(&state,&machine).await {
     Ok(_) => {
@@ -69,7 +69,7 @@ async fn save_machine(state : Data<AppState>,machine :web::Json<Machine>) -> imp
 }
 
 #[put("/")]
-async fn update_machine(state : Data<AppState>,machine :web::Json<Machine>) -> impl Responder{
+async fn update_machine(state : Data<AppState>,machine :web::Json<Machine<Uuid>>) -> impl Responder{
   let machine = machine.into_inner();
   match update(&state,&machine).await {
     Ok(_) => {

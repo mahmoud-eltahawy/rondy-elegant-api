@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::AppState;
 use rec::model::employee::Employee;
 
-pub async fn save(state : &Data<AppState>,employee : &Employee) -> Result<(),Error> {
+pub async fn save(state : &Data<AppState>,employee : &Employee<Uuid>) -> Result<(),Error> {
   let Employee{id,department_id,card_id,position,first_name,middle_name,last_name,password} = employee;
   let row = query!("
     INSERT INTO employee(
@@ -24,7 +24,7 @@ pub async fn save(state : &Data<AppState>,employee : &Employee) -> Result<(),Err
   }
 }
 
-pub async fn update(state : &Data<AppState>,employee : &Employee) -> Result<(),Error> {
+pub async fn update(state : &Data<AppState>,employee : &Employee<Uuid>) -> Result<(),Error> {
   let Employee{id,department_id,card_id,position,first_name,middle_name,last_name,password} = employee;
   let row = query!("
     UPDATE employee SET
@@ -82,7 +82,7 @@ pub async fn delete(state : &Data<AppState>,id : &Uuid) -> Result<(),Error> {
   }
 }
 
-pub async fn fetch_employee_by_id(state : &Data<AppState>,id : Uuid) -> Result<Employee,Error> {
+pub async fn fetch_employee_by_id(state : &Data<AppState>,id : Uuid) -> Result<Employee<Uuid>,Error> {
   let row = query_as!(Employee,r#"select
       id,
       department_id,

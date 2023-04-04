@@ -7,7 +7,7 @@ use uuid::Uuid;
 use crate::AppState;
 use rec::model::spare_part::SparePart;
 
-pub async fn fetch_spare_part_by_id(state : &Data<AppState>,id : Uuid) -> Option<SparePart> {
+pub async fn fetch_spare_part_by_id(state : &Data<AppState>,id : Uuid) -> Option<SparePart<Uuid>> {
   let row = query_as!(SparePart,r#"
         select id,name
         from spare_part WHERE id = $1"#,id)
@@ -18,7 +18,7 @@ pub async fn fetch_spare_part_by_id(state : &Data<AppState>,id : Uuid) -> Option
   }
 }
 
-pub async fn save(state : &Data<AppState>,part : &SparePart) -> Result<(),Box<dyn Error>> {
+pub async fn save(state : &Data<AppState>,part : &SparePart<Uuid>) -> Result<(),Box<dyn Error>> {
   let SparePart{id,name} = part;
   let row = query!("
     INSERT INTO spare_part(id,name)
@@ -30,7 +30,7 @@ pub async fn save(state : &Data<AppState>,part : &SparePart) -> Result<(),Box<dy
   }
 }
 
-pub async fn update(state : &Data<AppState>,part : &SparePart) -> Result<(),Box<dyn Error>> {
+pub async fn update(state : &Data<AppState>,part : &SparePart<Uuid>) -> Result<(),Box<dyn Error>> {
   let SparePart{id,name} = part;
   let row = query!("
     UPDATE spare_part

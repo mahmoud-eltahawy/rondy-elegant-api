@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS employee(
        first_name         VARCHAR(40)        NOT NULL,
        middle_name        VARCHAR(40)        NOT NULL,
        last_name          VARCHAR(40)        NOT NULL,
-       card_id            SMALLINT           NOT NULL,
+       card_id            BIGINT             NOT NULL,
        password           TEXT               NOT NULL,
        CONSTRAINT unique_employee_card_id UNIQUE(card_id),
        FOREIGN KEY(department_id) REFERENCES department(id) ON DELETE CASCADE,

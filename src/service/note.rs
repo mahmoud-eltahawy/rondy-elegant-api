@@ -57,7 +57,7 @@ async fn delete(state : Data<AppState>,id :web::Path<Uuid>) -> impl Responder{
 }
 
 #[post("/problem")]
-async fn note_to_problem_save(state : Data<AppState>,note : web::Json<DbNote>) -> impl Responder{
+async fn note_to_problem_save(state : Data<AppState>,note : web::Json<DbNote<Uuid>>) -> impl Responder{
   let note = note.into_inner();
   match save_note_to_shift_problem(&state,&note).await {
     Ok(_) => {
@@ -77,7 +77,7 @@ async fn note_to_problem_save(state : Data<AppState>,note : web::Json<DbNote>) -
 }
 
 #[post("/shift")]
-async fn note_to_shift_save(state : Data<AppState>,note : web::Json<DbNote>) -> impl Responder{
+async fn note_to_shift_save(state : Data<AppState>,note : web::Json<DbNote<Uuid>>) -> impl Responder{
   let note = note.into_inner();
   match save_note_to_shift(&state,&note).await {
     Ok(_) => {
@@ -97,7 +97,7 @@ async fn note_to_shift_save(state : Data<AppState>,note : web::Json<DbNote>) -> 
 }
 
 #[put("/")]
-async fn update(state : Data<AppState>,note : web::Json<Note>) -> impl Responder{
+async fn update(state : Data<AppState>,note : web::Json<Note<Uuid>>) -> impl Responder{
   let note = note.into_inner();
   match update_note(&state,&note).await {
     Ok(_) => {

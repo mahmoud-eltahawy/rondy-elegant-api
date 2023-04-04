@@ -5,10 +5,10 @@ use sqlx::{query, query_as};
 use uuid::Uuid;
 
 use crate::AppState;
-use rec::model::problem::Probelm;
+use rec::model::problem::Problem;
 
-pub async fn fetch_problem_by_id(state : &Data<AppState>,id : Uuid) -> Option<Probelm> {
-  let row = query_as!(Probelm,r#"
+pub async fn fetch_problem_by_id(state : &Data<AppState>,id : Uuid) -> Option<Problem<Uuid>> {
+  let row = query_as!(Problem,r#"
         select id,writer_id,department_id,title ,description
         from problem WHERE id = $1"#,id)
     .fetch_one(&state.db);
@@ -19,8 +19,8 @@ pub async fn fetch_problem_by_id(state : &Data<AppState>,id : Uuid) -> Option<Pr
 }
 
 
-pub async fn save(state : &Data<AppState>,problem : &Probelm) -> Result<(),Box<dyn Error>> {
-  let Probelm{id,writer_id,department_id,title,description} = problem;
+pub async fn save(state : &Data<AppState>,problem : &Problem<Uuid>) -> Result<(),Box<dyn Error>> {
+  let Problem{id,writer_id,department_id,title,description} = problem;
   let row = query!("
     INSERT INTO problem(id,writer_id,department_id,title,description)
     VALUES($1,$2,$3,$4,$5);",
@@ -32,8 +32,8 @@ pub async fn save(state : &Data<AppState>,problem : &Probelm) -> Result<(),Box<d
   }
 }
 
-pub async fn update(state : &Data<AppState>,problem : &Probelm) -> Result<(),Box<dyn Error>> {
-  let Probelm{id,writer_id,department_id,title,description} = problem;
+pub async fn update(state : &Data<AppState>,problem : &Problem<Uuid>) -> Result<(),Box<dyn Error>> {
+  let Problem{id,writer_id,department_id,title,description} = problem;
   let row = query!("
     UPDATE problem SET
     writer_id     = $2,

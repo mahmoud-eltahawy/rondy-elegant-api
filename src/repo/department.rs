@@ -7,7 +7,7 @@ use uuid::Uuid;
 use crate::AppState;
 use rec::model::department::Department;
 
-pub async fn fetch_department_by_id(state : &Data<AppState>,id : Uuid) -> Option<Department> {
+pub async fn fetch_department_by_id(state : &Data<AppState>,id : Uuid) -> Option<Department<Uuid>> {
   let row = query_as!(Department,r#"
         select id,boss_id,department_id,name
         from department WHERE id = $1"#,id)
@@ -30,7 +30,7 @@ pub async fn fetch_department_boss_id_by_id(state : &Data<AppState>,id : &Uuid) 
 }
 
 
-pub async fn save(state : &Data<AppState>,department : Department) -> Result<(),Box<dyn Error>> {
+pub async fn save(state : &Data<AppState>,department : Department<Uuid>) -> Result<(),Box<dyn Error>> {
   let Department{id,boss_id,department_id,name} = department;
   let row = query!("
     INSERT INTO department(id,boss_id,department_id,name)
@@ -42,7 +42,7 @@ pub async fn save(state : &Data<AppState>,department : Department) -> Result<(),
   }
 }
 
-pub async fn update(state : &Data<AppState>,department : Department) -> Result<(),Box<dyn Error>> {
+pub async fn update(state : &Data<AppState>,department : Department<Uuid>) -> Result<(),Box<dyn Error>> {
   let Department{id,boss_id,department_id,name} = department;
   let row = query!("
     UPDATE department SET

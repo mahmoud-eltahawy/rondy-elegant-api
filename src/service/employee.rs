@@ -59,7 +59,7 @@ async fn delete_employee(state : web::Data<AppState>, id : web::Path<Uuid>) -> i
 }
 
 #[post("/")]
-async fn save_employee(state : web::Data<AppState>, employee : web::Json<Employee>) -> impl Responder{
+async fn save_employee(state : web::Data<AppState>, employee : web::Json<Employee<Uuid>>) -> impl Responder{
   let employee = match hash_employee(employee.into_inner()) {
     Ok(employee) => employee,
     Err(_)    => return HttpResponse::InternalServerError()
@@ -83,7 +83,7 @@ async fn save_employee(state : web::Data<AppState>, employee : web::Json<Employe
 }
 
 #[put("/")]
-async fn update_employee(state : web::Data<AppState>, employee : web::Json<Employee>) -> impl Responder{
+async fn update_employee(state : web::Data<AppState>, employee : web::Json<Employee<Uuid>>) -> impl Responder{
   let employee = match hash_employee(employee.into_inner()) {
     Ok(employee) => employee,
     Err(_)    => return HttpResponse::InternalServerError()
@@ -149,7 +149,7 @@ fn  hash_password(password : String) -> BcryptResult<String>{
   bcrypt::hash(password, 8)
 }
 
-fn hash_employee(employee : Employee) -> Result<Employee,String>{
+fn hash_employee(employee : Employee<Uuid>) -> Result<Employee<Uuid>,String>{
   let Employee { id,
                  department_id,
                  position,

@@ -10,7 +10,7 @@ use crate::{
   }, syncing::record_version},
 };
 use rec::{
-  model::problem::Probelm,
+  model::problem::Problem,
   crud_sync::{
     CudVersion,
     Cud,
@@ -55,7 +55,7 @@ async fn delete_problem(state : Data<AppState>,id : web::Path<Uuid>) -> impl Res
 }
 
 #[post("/")]
-async fn save_problem(state : Data<AppState>,problem : web::Json<Probelm>) -> impl Responder{
+async fn save_problem(state : Data<AppState>,problem : web::Json<Problem<Uuid>>) -> impl Responder{
   let problem = problem.into_inner();
   match save(&state,&problem).await {
     Ok(_) => {
@@ -75,7 +75,7 @@ async fn save_problem(state : Data<AppState>,problem : web::Json<Probelm>) -> im
 }
 
 #[put("/")]
-async fn update_problem(state : Data<AppState>,problem : web::Json<Probelm>) -> impl Responder{
+async fn update_problem(state : Data<AppState>,problem : web::Json<Problem<Uuid>>) -> impl Responder{
   let problem = problem.into_inner();
   match update(&state,&problem).await {
     Ok(_) => {

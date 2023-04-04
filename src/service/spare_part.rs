@@ -57,7 +57,7 @@ async fn delete_spare_part(state : Data<AppState>,id : web::Path<Uuid>) -> impl 
 }
 
 #[post("/")]
-async fn save_spare_part(state : Data<AppState>,part : web::Json<SparePart>) -> impl Responder{
+async fn save_spare_part(state : Data<AppState>,part : web::Json<SparePart<Uuid>>) -> impl Responder{
   let part = part.into_inner();
   match save(&state,&part).await {
     Ok(_) => {
@@ -77,7 +77,7 @@ async fn save_spare_part(state : Data<AppState>,part : web::Json<SparePart>) -> 
 }
 
 #[put("/")]
-async fn update_spare_part(state : Data<AppState>,part : web::Path<SparePart>) -> impl Responder{
+async fn update_spare_part(state : Data<AppState>,part : web::Path<SparePart<Uuid>>) -> impl Responder{
   let part = part.into_inner();
   match update(&state,&part).await {
     Ok(_) => {

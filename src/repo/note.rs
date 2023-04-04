@@ -8,7 +8,7 @@ use crate::AppState;
 use rec::model::note::{Note, DbNote};
 
 pub async fn fetch_note_by_id(state : &Data<AppState>,
-                        id : &Uuid) -> Option<DbNote> {
+                        id : &Uuid) -> Option<DbNote<Uuid>> {
   let row = query_as!(DbNote,r#"
     SELECT * FROM note WHERE id = $1;"#,id)
     .fetch_one(&state.db);
@@ -19,7 +19,7 @@ pub async fn fetch_note_by_id(state : &Data<AppState>,
 }
 
 pub async fn save_note_to_shift_problem(state : &Data<AppState>,
-                              note : &DbNote) -> Result<(),Box<dyn Error>> {
+                              note : &DbNote<Uuid>) -> Result<(),Box<dyn Error>> {
   let DbNote{shift_id:_,id,shift_problem_id,content} = note;
   let shift_problem_id = match shift_problem_id {
     Some(id) => id,
@@ -40,7 +40,7 @@ pub async fn save_note_to_shift_problem(state : &Data<AppState>,
 }
 
 pub async fn save_note_to_shift(state : &Data<AppState>,
-                              note : &DbNote) -> Result<(),Box<dyn Error>> {
+                              note : &DbNote<Uuid>) -> Result<(),Box<dyn Error>> {
   let DbNote{id,shift_id,shift_problem_id : _,content} = note;
   let shift_id = match shift_id {
     Some(id) => id,
@@ -61,7 +61,7 @@ pub async fn save_note_to_shift(state : &Data<AppState>,
 }
 
 pub async fn update_note(state : &Data<AppState>,
-                              note : &Note) -> Result<(),Box<dyn Error>> {
+                              note : &Note<Uuid>) -> Result<(),Box<dyn Error>> {
   let Note{id,content} = note;
   let row = query!("
     UPDATE note SET content = $2 WHERE id =$1;"

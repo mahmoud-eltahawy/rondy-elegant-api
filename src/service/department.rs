@@ -107,7 +107,7 @@ async fn delete_department(state : Data<AppState>,id : web::Path<Uuid>) -> impl 
 }
 
 #[post("/")]
-async fn save_department(state : Data<AppState>,dep : web::Json<Department>) -> impl Responder{
+async fn save_department(state : Data<AppState>,dep : web::Json<Department<Uuid>>) -> impl Responder{
   let dep = dep.into_inner();
   let dep_id = dep.id;
   match save(&state,dep).await {
@@ -128,7 +128,7 @@ async fn save_department(state : Data<AppState>,dep : web::Json<Department>) -> 
 }
 
 #[put("/")]
-async fn update_department(state : Data<AppState>,dep : web::Json<Department>) -> impl Responder{
+async fn update_department(state : Data<AppState>,dep : web::Json<Department<Uuid>>) -> impl Responder{
   let dep = dep.into_inner();
   let dep_id = dep.id;
   match update(&state,dep).await {
