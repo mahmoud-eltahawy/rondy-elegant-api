@@ -18,6 +18,7 @@ dotenv = "^0.15"
 chrono = { version = "^0.4", features = ["serde"]}
 bcrypt = "0.13.0"
 rec = { path = "../rec"}
+settimeout = "0.1.2"
 
 [profile.dev.package.sqlx-macros]
 opt-level = 3

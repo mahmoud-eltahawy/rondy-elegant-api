@@ -1,193 +1,162 @@
-use actix_web::{
-  web::{Data, self},
-  Responder,
-  HttpResponse,
-  Scope,
-  post,delete,put,get
+use rec::model::{
+    note::Note,
+    shift_problem::{ShiftProblem, UpdateShiftProblem},
+    Environment, TableCrud, TableResponse, Wrapable,
 };
-use rec::{
-  model::shift_problem::ShiftProblem,
-  crud_sync::{
-    CudVersion,Cud,Table
-  }
-};
-use uuid::Uuid;
 
 use crate::{
-  AppState,
-  repo::{
-    syncing::record_version,
-    shift_problem::{
-      find_shift_problem_by_id,
-      save_shift_problem,
-      update_shift_problem,
-      delete_shift_problem
+    repo::{
+        relations::shift_problem::{
+            remove_problem_from_shift_problem, remove_spare_part_from_shift_problem,
+            save_problem_to_shift_problem, save_spare_part_to_shift_problem,
+        },
+        shift_problem::{
+            delete_shift_problem, find_shift_problem_by_id, remove_shift_problem_note,
+            save_shift_problem, save_shift_problem_note, update_shift_problem_begin_time,
+            update_shift_problem_end_time, update_shift_problem_machine,
+            update_shift_problem_maintainer, update_shift_problem_note,
+        },
     },
-    relations::shift_problem::{
-      save_problem_to_shift_problem,
-      save_spare_part_to_shift_problem,
-      remove_problem_from_shift_problem,
-      remove_spare_part_from_shift_problem
-    }
-  }
+    AppState,
 };
 
-pub fn scope() -> Scope{
-  web::scope("/sp")
-    .service(get_by_id)
-    .service(save)
-    .service(update)
-    .service(delete)
-    .service(save_problem)
-    .service(delete_problem)
-    .service(save_spare_part)
-    .service(delete_spare_part)
+pub async fn crud(
+    state: &AppState,
+    varient: TableCrud<ShiftProblem, UpdateShiftProblem>,
+) -> Result<TableResponse, Box<dyn std::error::Error>> {
+    match varient {
+        TableCrud::Read(id) => {
+            let result = find_shift_problem_by_id(&state, id).await?;
+            Ok(result.wrap())
+        }
+        TableCrud::Delete(env, _) => {
+            let Environment {
+                updater_id,
+                time_stamp,
+                target,
+            } = env;
+            delete_shift_problem(&state, target, (updater_id, time_stamp)).await?;
+            Ok(TableResponse::Done)
+        }
+        TableCrud::Create(env) => {
+            let Environment {
+                updater_id,
+                time_stamp,
+                target,
+            } = env;
+            save_shift_problem(&state, target, (updater_id, time_stamp)).await?;
+            Ok(TableResponse::Done)
+        }
+        TableCrud::Update(env) => {
+            update(state, env).await?;
+            Ok(TableResponse::Done)
+        }
+    }
 }
 
-#[get("/{id}")]
-async fn get_by_id(state : Data<AppState>,id :web::Path<Uuid>) -> impl Responder{
-  match find_shift_problem_by_id(&state,id.into_inner()).await{
-    Ok(problem) => HttpResponse::Ok().json(problem),
-    Err(_)      => HttpResponse::InternalServerError().into()
-  }
-}
-
-#[delete("/{id}")]
-async fn delete(state : Data<AppState>,id : web::Path<Uuid>) -> impl Responder{
-  let id = id.into_inner();
-  match delete_shift_problem(&state,&id).await {
-    Ok(_) => {
-      match record_version(&state, CudVersion{
-        cud : Cud::Delete,
-        target_table : Table::ShiftProblem,
-        version_number : 0,
-        target_id : id,
-        other_target_id: None
-      }).await {
-        Ok(_) => HttpResponse::Ok(),
-        Err(_) => HttpResponse::InternalServerError()
-      }
-    },
-    Err(_) => HttpResponse::InternalServerError()
-  }
-}
-
-#[post("/")]
-async fn save(state : Data<AppState>,problem : web::Json<ShiftProblem>) -> impl Responder{
-  let problem = problem.into_inner();
-  match save_shift_problem(&state,&problem).await {
-    Ok(_) => {
-      match record_version(&state, CudVersion{
-        cud : Cud::Create,
-        target_table : Table::ShiftProblem,
-        version_number : 0,
-        target_id : problem.id,
-        other_target_id: None
-      }).await {
-        Ok(_) => HttpResponse::Ok(),
-        Err(_) => HttpResponse::InternalServerError()
-      }
-    },
-    Err(_) => HttpResponse::InternalServerError()
-  }
-}
-
-#[put("/")]
-async fn update(state : Data<AppState>,problem : web::Json<ShiftProblem>) -> impl Responder{
-  let problem = problem.into_inner();
-  match update_shift_problem(&state,&problem).await {
-    Ok(_) => {
-      match record_version(&state, CudVersion{
-        cud             : Cud::Update,
-        target_table    : Table::ShiftProblem,
-        version_number  : 0,
-        target_id       : problem.id,
-        other_target_id : None
-      }).await {
-        Ok(_) => HttpResponse::Ok(),
-        Err(_) => HttpResponse::InternalServerError()
-      }
-    },
-    Err(_) => HttpResponse::InternalServerError()
-  }
-}
-
-#[get("/problem/{pid}/{spid}")]
-async fn save_problem(state : Data<AppState>,path : web::Path<(Uuid,Uuid)>) -> impl Responder{
-  let (pid,spid) = path.into_inner();
-  match save_problem_to_shift_problem(&state,&pid,&spid).await {
-    Ok(_) => {
-      match record_version(&state, CudVersion{
-        cud : Cud::Create,
-        target_table : Table::ShiftProblemProblem,
-        version_number : 0,
-        target_id : pid,
-        other_target_id: Some(spid)
-      }).await {
-        Ok(_) => HttpResponse::Ok(),
-        Err(_) => HttpResponse::InternalServerError()
-      }
-    },
-    Err(_) => HttpResponse::InternalServerError()
-  }
-}
-
-#[get("/part/{pid}/{spid}")]
-async fn save_spare_part(state : Data<AppState>,path : web::Path<(Uuid,Uuid)>) -> impl Responder{
-  let (pid,spid) = path.into_inner();
-  match save_spare_part_to_shift_problem(&state,&pid,&spid).await {
-    Ok(_) => {
-      match record_version(&state, CudVersion{
-        cud : Cud::Create,
-        target_table : Table::ShiftProblemSparePart,
-        version_number : 0,
-        target_id : pid,
-        other_target_id: Some(spid)
-      }).await {
-        Ok(_) => HttpResponse::Ok(),
-        Err(_) => HttpResponse::InternalServerError()
-      }
-    },
-    Err(_) => HttpResponse::InternalServerError()
-  }
-}
-
-#[delete("/problem/{pid}/{spid}")]
-async fn delete_problem(state : Data<AppState>,path : web::Path<(Uuid,Uuid)>) -> impl Responder{
-  let (pid,spid) = path.into_inner();
-  match remove_problem_from_shift_problem(&state,&pid,&spid).await {
-    Ok(_) => {
-      match record_version(&state, CudVersion{
-        cud : Cud::Delete,
-        target_table : Table::ShiftProblemProblem,
-        version_number : 0,
-        target_id : pid,
-        other_target_id: Some(spid)
-      }).await {
-        Ok(_) => HttpResponse::Ok(),
-        Err(_) => HttpResponse::InternalServerError()
-      }
-    },
-    Err(_) => HttpResponse::InternalServerError()
-  }
-}
-
-#[delete("/part/{pid}/{spid}")]
-async fn delete_spare_part(state : Data<AppState>,path : web::Path<(Uuid,Uuid)>) -> impl Responder{
-  let (pid,spid) = path.into_inner();
-  match remove_spare_part_from_shift_problem(&state,&pid,&spid).await {
-    Ok(_) => {
-      match record_version(&state, CudVersion{
-        cud : Cud::Delete,
-        target_table : Table::ShiftProblemSparePart,
-        version_number : 0,
-        target_id : pid,
-        other_target_id: Some(spid)
-      }).await {
-        Ok(_) => HttpResponse::Ok(),
-        Err(_) => HttpResponse::InternalServerError()
-      }
-    },
-    Err(_) => HttpResponse::InternalServerError()
-  }
+async fn update(
+    state: &AppState,
+    env: Environment<UpdateShiftProblem>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let Environment {
+        updater_id,
+        time_stamp,
+        target,
+    } = env;
+    match target {
+        UpdateShiftProblem::AddProblem(shift_problem_id, problem_id) => {
+            save_problem_to_shift_problem(
+                &state,
+                problem_id,
+                shift_problem_id,
+                (updater_id, time_stamp),
+            )
+            .await?;
+            Ok(())
+        }
+        UpdateShiftProblem::DeleteProblem(shift_problem_id, problem_id) => {
+            remove_problem_from_shift_problem(
+                &state,
+                problem_id,
+                shift_problem_id,
+                (updater_id, time_stamp),
+            )
+            .await?;
+            Ok(())
+        }
+        UpdateShiftProblem::AddSparePart(shift_problem_id, spare_part_id) => {
+            save_spare_part_to_shift_problem(
+                &state,
+                spare_part_id,
+                shift_problem_id,
+                (updater_id, time_stamp),
+            )
+            .await?;
+            Ok(())
+        }
+        UpdateShiftProblem::DeleteSparePart(shift_problem_id, spare_part_id) => {
+            remove_spare_part_from_shift_problem(
+                &state,
+                shift_problem_id,
+                spare_part_id,
+                (updater_id, time_stamp),
+            )
+            .await?;
+            Ok(())
+        }
+        UpdateShiftProblem::UpdateBeginTime(shift_problem_id, begin_time) => {
+            update_shift_problem_begin_time(
+                state,
+                shift_problem_id,
+                begin_time,
+                (updater_id, time_stamp),
+            )
+            .await?;
+            Ok(())
+        }
+        UpdateShiftProblem::UpdateEndTime(shift_problem_id, end_time) => {
+            update_shift_problem_end_time(
+                state,
+                shift_problem_id,
+                end_time,
+                (updater_id, time_stamp),
+            )
+            .await?;
+            Ok(())
+        }
+        UpdateShiftProblem::UpdateMachine(shift_problem_id, machine_id) => {
+            update_shift_problem_machine(
+                state,
+                shift_problem_id,
+                machine_id,
+                (updater_id, time_stamp),
+            )
+            .await?;
+            Ok(())
+        }
+        UpdateShiftProblem::UpdateMaintainer(shift_problem_id, maintainer_id) => {
+            update_shift_problem_maintainer(
+                state,
+                shift_problem_id,
+                maintainer_id,
+                (updater_id, time_stamp),
+            )
+            .await?;
+            Ok(())
+        }
+        UpdateShiftProblem::AddNote(note) => {
+            let Note { id, content } = note;
+            save_shift_problem_note(state, id, content, (updater_id, time_stamp)).await?;
+            Ok(())
+        }
+        UpdateShiftProblem::DeleteNote(shift_problem_id) => {
+            remove_shift_problem_note(state, shift_problem_id, (updater_id, time_stamp)).await?;
+            Ok(())
+        }
+        UpdateShiftProblem::UpdateNote(note) => {
+            let Note { id, content } = note;
+            update_shift_problem_note(state, id, content, (updater_id, time_stamp)).await?;
+            Ok(())
+        }
+    }
 }

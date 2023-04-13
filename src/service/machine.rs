@@ -1,89 +1,60 @@
-use actix_web::{
-    web::{Data, self}, Responder, HttpResponse, Scope, post,get,delete,put};
-use rec::{
-  model::machine::Machine,
-  crud_sync::{
-    CudVersion,
-    Table,
-    Cud
-  }
+use crate::{
+    repo::machine::{delete, fetch_machine_by_id, save, update_name},
+    AppState,
 };
-use uuid::Uuid;
 
-use crate::{AppState, repo::{machine::{fetch_machine_by_id, save, update, delete}, syncing::record_version}};
+use rec::model::{
+    machine::{Machine, UpdateMachine},
+    Environment, TableCrud, TableResponse, Wrapable,
+};
 
-pub fn scope() -> Scope{
-  web::scope("/machine")
-    .service(get_machine_by_id)
-    .service(save_machine)
-    .service(update_machine)
-    .service(delete_machine)
+pub async fn crud(
+    state: &AppState,
+    varient: TableCrud<Machine, UpdateMachine>,
+) -> Result<TableResponse, Box<dyn std::error::Error>> {
+    match varient {
+        TableCrud::Read(id) => {
+            let result = fetch_machine_by_id(state, id).await?;
+            Ok(result.wrap())
+        }
+        TableCrud::Delete(env, _) => {
+            let Environment {
+                updater_id,
+                time_stamp,
+                target,
+            } = env;
+            delete(state, target, (updater_id, time_stamp)).await?;
+            Ok(TableResponse::Done)
+        }
+        TableCrud::Create(env) => {
+            let Environment {
+                updater_id,
+                time_stamp,
+                target,
+            } = env;
+            save(state, target, (updater_id, time_stamp)).await?;
+            Ok(TableResponse::Done)
+        }
+        TableCrud::Update(env) => {
+            update(state, env).await?;
+            Ok(TableResponse::Done)
+        }
+    }
 }
 
-#[get("/{id}")]
-async fn get_machine_by_id(state : Data<AppState>,id :web::Path<Uuid>) -> impl Responder{
-  match fetch_machine_by_id(&state,id.into_inner()).await{
-    Some(machine) => HttpResponse::Ok().json(machine),
-    None          => HttpResponse::InternalServerError().into()
-  }
-}
-
-#[delete("/{id}")]
-async fn delete_machine(state : Data<AppState>,id :web::Path<Uuid>) -> impl Responder{
-  let id = id.into_inner();
-  match delete(&state,&id).await {
-    Ok(_) => {
-      match record_version(&state, CudVersion{
-        cud : Cud::Delete,
-        target_table : Table::Machine,
-        target_id : id,
-        other_target_id : None,
-        version_number : 0
-      }).await {
-        Ok(_) => HttpResponse::Ok(),
-        Err(_) => HttpResponse::InternalServerError()
-      }
-    },
-    Err(_) => HttpResponse::InternalServerError()
-  }
-}
-
-#[post("/")]
-async fn save_machine(state : Data<AppState>,machine :web::Json<Machine<Uuid>>) -> impl Responder{
-  let machine = machine.into_inner();
-  match save(&state,&machine).await {
-    Ok(_) => {
-      match record_version(&state, CudVersion{
-        cud : Cud::Create,
-        target_table : Table::Machine,
-        target_id : machine.id,
-        other_target_id : None,
-        version_number : 0
-      }).await {
-        Ok(_) => HttpResponse::Ok(),
-        Err(_) => HttpResponse::InternalServerError()
-      }
-    },
-    Err(_)  => HttpResponse::InternalServerError()
-  }
-}
-
-#[put("/")]
-async fn update_machine(state : Data<AppState>,machine :web::Json<Machine<Uuid>>) -> impl Responder{
-  let machine = machine.into_inner();
-  match update(&state,&machine).await {
-    Ok(_) => {
-      match record_version(&state, CudVersion{
-        cud : Cud::Update,
-        target_table : Table::Machine,
-        target_id : machine.id,
-        other_target_id : None,
-        version_number : 0
-      }).await {
-        Ok(_) => HttpResponse::Ok(),
-        Err(_) => HttpResponse::InternalServerError()
-      }
-    },
-    Err(_)  => HttpResponse::InternalServerError()
-  }
+async fn update(
+    state: &AppState,
+    env: Environment<UpdateMachine>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let Environment {
+        updater_id,
+        time_stamp,
+        target,
+    } = env;
+    match target {
+        UpdateMachine::UpdateName(id, name) => {
+            update_name(state, id, name, (updater_id, time_stamp)).await?;
+            Ok(())
+        }
+    }
 }

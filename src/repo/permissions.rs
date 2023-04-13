@@ -1,136 +1,121 @@
 use std::error::Error;
 
-use actix_web::web::Data;
-use sqlx::{query, query_as};
+use chrono::NaiveDateTime;
+use rec::{
+    crud_sync::UpdateVersion,
+    model::{employee::UpdateEmployee, permissions::PermissionName, Update},
+};
+use sqlx::query;
 use uuid::Uuid;
 
 use crate::AppState;
-use rec::model::permissions::Permissions;
 
-pub async fn fetch_permissions_by_id(state : &Data<AppState>,id : Uuid) -> Option<Permissions<Uuid>> {
-  let row = query_as!(Permissions,r#"
-        select * from permissions WHERE id = $1"#,id)
-    .fetch_one(&state.db);
-  match row.await {
-    Ok(dep) =>Some(dep),
-    Err(_) => None
-  }
+use super::syncing::record_update_version;
+
+pub async fn fetch_permissions_by_id(
+    state: &AppState,
+    id: &Uuid,
+) -> Result<Vec<PermissionName>, Box<dyn std::error::Error>> {
+    let row = query!(
+        r#"
+        select permission from permissions WHERE employee_id = $1"#,
+        id
+    )
+    .fetch_all(&state.db);
+    match row.await {
+        Ok(records) => Ok(records
+            .into_iter()
+            .flat_map(|r| PermissionName::try_from(r.permission))
+            .collect()),
+        Err(err) => Err(err.into()),
+    }
 }
 
-pub async fn allow_permission(state : &Data<AppState>,
-               id : &Uuid,permission : String) -> Result<(),Box<dyn Error>> {
-  let sql = format!("UPDATE permissions SET {} = true WHERE id = $1",permission);
-  let row = query(&sql)
-    .bind(id)
-    .execute(&state.db);
-  match row.await {
-    Ok(_)  => Ok(()),
-    Err(err) => Err(err.into())
-  }
+pub async fn allow_permission(
+    state: &AppState,
+    id: Uuid,
+    permission: PermissionName,
+    env: (Uuid, NaiveDateTime),
+) -> Result<(), Box<dyn Error>> {
+    let (updater_id, time_stamp) = env;
+    query!(
+        r#"
+        INSERT INTO permissions(employee_id,permission)
+        VALUES($1,$2)
+    "#,
+        id,
+        permission.stringify()
+    )
+    .execute(&state.db)
+    .await?;
+    record_update_version(
+        &state,
+        UpdateVersion {
+            version_number: 0,
+            target_id: id,
+            time_stamp,
+            updater_id,
+            json: Update::Employee(UpdateEmployee::AllowPermission(id, permission)),
+        },
+    )
+    .await?;
+    Ok(())
 }
 
-pub async fn forbid_permission(state : &Data<AppState>,
-               id : &Uuid,permission : String) -> Result<(),Box<dyn Error>> {
-  let sql = format!("UPDATE permissions SET {} = false WHERE id = $1",permission);
-  let row = query(&sql)
-    .bind(id)
-    .execute(&state.db);
-  match row.await {
-    Ok(_)  => Ok(()),
-    Err(err) => Err(err.into())
-  }
+pub async fn forbid_permission(
+    state: &AppState,
+    employee_id: Uuid,
+    permission: PermissionName,
+    env: (Uuid, NaiveDateTime),
+) -> Result<(), Box<dyn Error>> {
+    let (updater_id, time_stamp) = env;
+    query!(
+        r#"
+        DELETE FROM permissions WHERE employee_id = $1 AND permission = $2
+    "#,
+        employee_id,
+        permission.stringify()
+    )
+    .execute(&state.db)
+    .await?;
+    record_update_version(
+        &state,
+        UpdateVersion {
+            version_number: 0,
+            target_id: employee_id,
+            updater_id,
+            time_stamp,
+            json: Update::Employee(UpdateEmployee::ForbidPermission(employee_id, permission)),
+        },
+    )
+    .await?;
+    Ok(())
 }
 
-pub async fn save(state : &Data<AppState>,permissions : Permissions<Uuid>) -> Result<(),Box<dyn Error>> {
-  let Permissions{
-      id,
-      define_problem,
-      modify_department_problems,
-      read_department_problems,
-      access_history_all_departments_department_problems,
-      access_history_all_departments_problems,
-      access_history_department_department_problems,
-      access_history_department_problems,
-      access_history_employees,
-      access_history_machines,
-      access_history_spare_parts,
-      write_department_problem
-  } = permissions;
-  let row = query!("
-    INSERT INTO permissions(id,
-      define_problem,
-      modify_department_problems,
-      read_department_problems,
-      access_history_all_departments_department_problems,
-      access_history_all_departments_problems,
-      access_history_department_department_problems,
-      access_history_department_problems,
-      access_history_employees,
-      access_history_machines,
-      access_history_spare_parts,
-      write_department_problem)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12);",
-      id,
-      define_problem,
-      modify_department_problems,
-      read_department_problems,
-      access_history_all_departments_department_problems,
-      access_history_all_departments_problems,
-      access_history_department_department_problems,
-      access_history_department_problems,
-      access_history_employees,
-      access_history_machines,
-      access_history_spare_parts,
-      write_department_problem).execute(&state.db);
-  match row.await {
-    Ok(_) => Ok(()),
-    Err(err) => Err(err.into())
-  }
-}
-
-pub async fn update(state : &Data<AppState>,permissions : Permissions<Uuid>) -> Result<(),Box<dyn Error>> {
-  let Permissions{
-      id,
-      define_problem,
-      modify_department_problems,
-      read_department_problems,
-      access_history_all_departments_department_problems,
-      access_history_all_departments_problems,
-      access_history_department_department_problems,
-      access_history_department_problems,
-      access_history_employees,
-      access_history_machines,
-      access_history_spare_parts,
-      write_department_problem
-  } = permissions;
-  let row = query!("
-    UPDATE permissions SET
-      define_problem                                        = $2,
-      modify_department_problems                            = $3,
-      read_department_problems                              = $4,
-      access_history_all_departments_department_problems    = $5,
-      access_history_all_departments_problems               = $6,
-      access_history_department_department_problems         = $7,
-      access_history_department_problems                    = $8,
-      access_history_employees                              = $9,
-      access_history_machines                               = $10,
-      access_history_spare_parts                            = $11,
-      write_department_problem                              = $12
-    WHERE id        = $1;",
-      id,
-      define_problem,
-      modify_department_problems,
-      read_department_problems,
-      access_history_all_departments_department_problems,
-      access_history_all_departments_problems,
-      access_history_department_department_problems,
-      access_history_department_problems,
-      access_history_employees,
-      access_history_machines,
-      access_history_spare_parts,
-      write_department_problem).execute(&state.db);
-  match row.await {
-    Ok(_) => Ok(()),
-    Err(err) => Err(err.into())
-  }
+pub async fn forbid_all_permissions(
+    state: &AppState,
+    id: Uuid,
+    env: (Uuid, NaiveDateTime),
+) -> Result<(), Box<dyn Error>> {
+    let (updater_id, time_stamp) = env;
+    query!(
+        r#"
+        DELETE FROM permissions WHERE employee_id = $1;
+    "#,
+        id
+    )
+    .execute(&state.db)
+    .await?;
+    record_update_version(
+        &state,
+        UpdateVersion {
+            version_number: 0,
+            target_id: id,
+            time_stamp,
+            updater_id,
+            json: Update::Employee(UpdateEmployee::ForbidAllPermissions(id)),
+        },
+    )
+    .await?;
+    Ok(())
 }
